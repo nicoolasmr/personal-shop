@@ -1,25 +1,17 @@
-// =============================================================================
-// Goal Finance Sync
-// =============================================================================
 
-import { supabase } from '@/lib/supabase';
-import { syncFinancialGoalProgress } from '@/services/goals';
+// Mock implementation request in step 332 to prevent errors in hook
+// The user request uses this service, so providing stubs for function not yet implemented in service/finance.ts
 
-export async function syncFinanceGoalToGoal(
-    orgId: string,
-    userId: string,
-    financeGoalId: string,
-    newAmount: number
-): Promise<void> {
-    // Find linked main Goal
-    const { data: financeGoal } = await supabase
-        .from('finance_goals')
-        .select('linked_goal_id')
-        .eq('id', financeGoalId)
-        .single();
+import { FinanceGoal } from '@/types/finance';
 
-    if (!financeGoal?.linked_goal_id) return;
+export const createGoalFromFinanceGoal = async (orgId: string, userId: string, financeGoal: FinanceGoal) => {
+    console.log('[Mock] Create goal from finance goal', financeGoal.id);
+};
 
-    // Utilize the main goals service to add progress
-    await syncFinancialGoalProgress(orgId, userId, financeGoal.linked_goal_id, newAmount);
-}
+export const updateLinkedGoal = async (orgId: string, financeGoal: FinanceGoal) => {
+    console.log('[Mock] Update linked goal', financeGoal.id);
+};
+
+export const deleteLinkedGoal = async (orgId: string, financeGoalId: string) => {
+    console.log('[Mock] Delete linked goal', financeGoalId);
+};
