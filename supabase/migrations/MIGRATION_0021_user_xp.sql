@@ -75,7 +75,9 @@ BEGIN
   END IF;
 END $$;
 
--- Initialize XP for existing users based on their profile
+-- Initialize XP for existing users based on their profile, ensuring we only include valid auth users
 INSERT INTO public.user_xp (user_id, total_xp)
-SELECT user_id, 0 FROM public.profiles
+SELECT p.user_id, 0 
+FROM public.profiles p
+JOIN auth.users u ON p.user_id = u.id
 ON CONFLICT DO NOTHING;
