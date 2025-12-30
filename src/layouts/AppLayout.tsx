@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar, MobileSidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
+import { WelcomeTour } from '@/components/onboarding/WelcomeTour';
 
 export default function AppLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
         <div className="flex min-h-screen bg-background text-foreground">
+            <WelcomeTour />
             {/* Desktop Sidebar */}
             <Sidebar />
 

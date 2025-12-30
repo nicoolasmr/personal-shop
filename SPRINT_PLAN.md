@@ -25,20 +25,20 @@ Transformar a plataforma de um "Beta Funcional" em um produto "Production-Ready"
 ---
 
 ## 🏃 Sprint C: Resiliência & Offline-First
-**Status:** Planejada
+**Status:** ✅ Concluída (2025-12-29)
 
-- [ ] **Task C.1: TanStack Retry & Cache**
-  - Configurar retry exponencial para mutações.
-- [ ] **Task C.2: PWA Offline Sync**
-  - Garantir que dados básicos (tasks do dia) funcionem sem rede.
-- [ ] **Task C.3: Sentry Production**
-  - Configurar monitoramento real de crashes.
+- [x] **Task C.1: TanStack Retry & Cache**
+- [x] **Task C.2: PWA Offline Sync**
+- [x] **Task C.3: Sentry Production**
 
 ---
 
 ## 🏃 Sprint D: Polimento & Launch
-**Status:** Planejada
+**Status:** ✅ Concluída (2025-12-29)
 
-- [ ] **Task D.1: Accessibility Audit**
-- [ ] **Task D.2: Onboarding Flow**
-- [ ] **Task D.3: Final SEO & Meta Tags**
+- [x] **Task D.1: Accessibility & Design Audit**
+  - Refatoração de tokens HSL e animações premium.
+- [x] **Task D.2: Onboarding Flow**
+  - Implementação do `WelcomeTour` interativo.
+- [x] **Task D.3: Final SEO & Meta Tags**
+  - Open Graph, Twitter Cards, e JSON-LD estruturado.
