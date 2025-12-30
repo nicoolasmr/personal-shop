@@ -428,3 +428,22 @@ rm -rf node_modules/.vitest
 rm -rf playwright-report
 rm -rf test-results
 ```
+
+## Security Verification - send-push (v3.5.7)
+
+**Objetivo**: Validar que a Edge Function de push notificações está devidamente protegida contra acessos não autorizados e spam.
+
+Para o checklist detalhado com comandos `curl` e matriz de autorização, consulte:
+👉 [QA_PUSH_SECURITY_3_5_7.md](./QA_PUSH_SECURITY_3_5_7.md)
+
+### Resumo de Cobertura:
+- [ ] **Auto-envio**: Permitido (200)
+- [ ] **Cross-org**: Bloqueado (403)
+- [ ] **Cross-user (Member)**: Bloqueado (403)
+- [ ] **Cross-user (Admin)**: Permitido (200)
+- [ ] **URL Sanitization**: Bloqueia `javascript:`, `http:`, etc (400)
+- [ ] **Rate Limiting**: Bloqueia excesso (429)
+- [ ] **Audit Log**: Registrado em caso de 403.
+
+---
+```

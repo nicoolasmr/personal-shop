@@ -1,62 +1,90 @@
-
+import { Suspense, lazy } from "react";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import AppLayout from "@/layouts/AppLayout";
-import Login from "@/pages/auth/Login";
-import Signup from "@/pages/auth/Signup";
-import Home from "@/pages/Home";
-import GoalsPage from "@/pages/goals/GoalsPage";
-import FinancePage from "@/pages/finance/FinancePage";
-import StatisticsPage from "@/pages/statistics/StatisticsPage";
-import ProfilePage from "@/pages/profile/ProfilePage";
-import SettingsPage from "@/pages/settings/SettingsPage";
-import CalendarPage from "@/pages/calendar/CalendarPage";
-import TasksPage from "@/pages/tasks/TasksPage";
-import { useAuth } from "@/contexts/AuthContext";
-
+import { AuthProvider } from "@/hooks/useAuth";
 import { AuthGuard } from "@/components/AuthGuard";
-import { TenantProvider } from "@/contexts/TenantContext";
+import { NavigationTracker } from "@/components/NavigationTracker";
+import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
+import LoadingScreen from "@/components/LoadingScreen";
+import { RuntimeErrorBoundary } from "@/components/RuntimeErrorBoundary";
 
-const queryClient = new QueryClient();
+// Public pages - Lazy loaded
+const Login = lazy(() => import("./pages/auth/Login"));
+const Signup = lazy(() => import("./pages/auth/Signup"));
+const Home = lazy(() => import("./pages/Home"));
+
+// App layout and pages - Lazy loaded
+const AppLayout = lazy(() => import("./layouts/AppLayout"));
+const Tasks = lazy(() => import("./pages/tasks/TasksPage"));
+const Goals = lazy(() => import("./pages/goals/GoalsPage"));
+const Statistics = lazy(() => import("./pages/statistics/StatisticsPage"));
+const Finance = lazy(() => import("./pages/finance/FinancePage"));
+const CalendarPage = lazy(() => import("./pages/calendar/CalendarPage"));
+const Profile = lazy(() => import("./pages/profile/ProfilePage"));
+const Settings = lazy(() => import("./pages/settings/SettingsPage"));
+
+// Not found/Errors
+const NotFound = lazy(() => import("./pages/Home")); // Fallback to Home or specific NotFound if exists
+
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            retry: 1,
+            refetchOnWindowFocus: false,
+        },
+    },
+});
 
 const App = () => (
     <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-            <TenantProvider>
+        <TooltipProvider>
+            <AuthProvider>
+                <Toaster />
+                <Sonner position="top-right" closeButton richColors />
                 <BrowserRouter>
-                    <Routes>
-                        {/* Public routes */}
-                        <Route path="/" element={<Navigate to="/login" replace />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/signup" element={<Signup />} />
+                    <NavigationTracker />
+                    <GlobalLoadingIndicator />
+                    <RuntimeErrorBoundary>
+                        <Suspense fallback={<LoadingScreen />}>
+                            <Routes>
+                                {/* Public routes */}
+                                <Route path="/" element={<Navigate to="/login" replace />} />
+                                <Route path="/login" element={<Login />} />
+                                <Route path="/signup" element={<Signup />} />
+                                <Route path="/cadastro" element={<Navigate to="/signup" replace />} />
 
-                        {/* Protected app routes */}
-                        <Route
-                            path="/app"
-                            element={
-                                <AuthGuard>
-                                    <AppLayout />
-                                </AuthGuard>
-                            }
-                        >
-                            <Route index element={<Navigate to="/app/home" replace />} />
-                            <Route path="home" element={<Home />} />
-                            <Route path="tasks" element={<TasksPage />} />
-                            <Route path="goals" element={<GoalsPage />} />
-                            <Route path="stats" element={<StatisticsPage />} />
-                            <Route path="finance" element={<FinancePage />} />
-                            <Route path="calendar" element={<CalendarPage />} />
-                            <Route path="profile" element={<ProfilePage />} />
-                            <Route path="settings" element={<SettingsPage />} />
-                        </Route>
+                                {/* Protected app routes */}
+                                <Route
+                                    path="/app"
+                                    element={
+                                        <AuthGuard>
+                                            <AppLayout />
+                                        </AuthGuard>
+                                    }
+                                >
+                                    <Route index element={<Navigate to="/app/home" replace />} />
+                                    <Route path="home" element={<Home />} />
+                                    <Route path="tasks" element={<Tasks />} />
+                                    <Route path="habits" element={<Navigate to="/app/goals?tab=habits" replace />} />
+                                    <Route path="goals" element={<Goals />} />
+                                    <Route path="stats" element={<Statistics />} />
+                                    <Route path="finance" element={<Finance />} />
+                                    <Route path="calendar" element={<CalendarPage />} />
+                                    <Route path="profile" element={<Profile />} />
+                                    <Route path="settings" element={<Settings />} />
+                                </Route>
 
-                        {/* Catch-all */}
-                        <Route path="*" element={<Navigate to="/app/home" replace />} />
-                    </Routes>
+                                {/* Catch-all */}
+                                <Route path="*" element={<Home />} />
+                            </Routes>
+                        </Suspense>
+                    </RuntimeErrorBoundary>
                 </BrowserRouter>
-            </TenantProvider>
-        </AuthProvider>
+            </AuthProvider>
+        </TooltipProvider>
     </QueryClientProvider>
 );
 

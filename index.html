@@ -25,7 +25,49 @@
 </head>
 
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <!-- Initial Splash Screen (Static CSS for zero-latency feedback) -->
+        <style>
+            #splash-screen {
+                position: fixed;
+                inset: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background-color: #0f172a;
+                color: #6366f1;
+                font-family: system-ui, -apple-system, sans-serif;
+                z-index: 9999;
+            }
+
+            .spinner {
+                width: 40px;
+                height: 40px;
+                border: 3px solid rgba(99, 102, 241, 0.2);
+                border-top-color: #6366f1;
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+                margin-bottom: 1rem;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .logo-text {
+                font-size: 1.5rem;
+                font-weight: 700;
+                letter-spacing: -0.025em;
+            }
+        </style>
+        <div id="splash-screen">
+            <div class="spinner"></div>
+            <div class="logo-text">VIDA360</div>
+        </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
 </body>
 

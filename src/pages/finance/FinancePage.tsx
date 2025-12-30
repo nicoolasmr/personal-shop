@@ -5,7 +5,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Plus, ChevronLeft, ChevronRight, DollarSign, CreditCard, Target, Filter } from 'lucide-react';
 import { useFinance } from '@/hooks/useFinance';
 import { formatCurrency, getMonthName, PaymentMethod } from '@/types/finance';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { TransactionForm } from '@/components/finance/TransactionForm';
+import { Progress } from '@/components/ui/progress';
 
 // Placeholders for components not yet created but referenced
 const FinanceSummary = ({ summary }: any) => (
@@ -59,9 +61,15 @@ export default function FinancePage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('transactions');
 
-    // Assuming useFinance is updated to accept year/month params, for now using default without params or with mocked params if not supported yet
-    // If useFinance doesn't accept params yet, we rely on its default behavior
-    const { transactions, financeGoals, summary, isLoading } = useFinance(); // (year, month) - pending update to hook to accept args
+    // Updated useFinance to accept year/month params for real-time filtering
+    const {
+        transactions,
+        financeGoals,
+        summary,
+        installments,
+        installmentsSummary,
+        isLoading
+    } = useFinance(year, month);
 
     const handlePrevMonth = () => {
         if (month === 1) { setMonth(12); setYear(year - 1); }
@@ -107,8 +115,34 @@ export default function FinancePage() {
                     <GoalsList goals={financeGoals} />
                 </TabsContent>
 
-                <TabsContent value="installments" className="pt-4">
-                    <div className="text-center py-8 text-muted-foreground">Funcionalidade de parcelas em desenvolvimento.</div>
+                <TabsContent value="installments" className="pt-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <Card>
+                            <CardHeader className="p-4"><CardTitle className="text-sm">Comprometimento Mensal</CardTitle></CardHeader>
+                            <CardContent className="p-4 pt-0 text-xl font-bold">{formatCurrency(installmentsSummary.total_monthly_commitment)}</CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="p-4"><CardTitle className="text-sm">Total Restante</CardTitle></CardHeader>
+                            <CardContent className="p-4 pt-0 text-xl font-bold">{formatCurrency(installmentsSummary.total_remaining_amount)}</CardContent>
+                        </Card>
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="font-medium px-1">Parcelamentos Ativos</h3>
+                        {installments?.map((inst: any) => (
+                            <Card key={inst.id}>
+                                <CardContent className="p-4 flex justify-between items-center">
+                                    <div>
+                                        <div className="font-medium">{inst.description}</div>
+                                        <div className="text-xs text-muted-foreground">{inst.installment_number}/{inst.installment_count} parcelas</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="font-bold">{formatCurrency(inst.amount)}</div>
+                                        <div className="text-xs text-muted-foreground">Faltam {formatCurrency(inst.amount * (inst.installment_count - inst.installment_number + 1))}</div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="credit-card" className="pt-4">
@@ -118,7 +152,12 @@ export default function FinancePage() {
 
             {/* Mock Modal for now */}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent><div className="p-4">Nova Transação Modal (Em Breve)</div></DialogContent>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Nova Transação</DialogTitle>
+                    </DialogHeader>
+                    <TransactionForm onSuccess={() => setModalOpen(false)} />
+                </DialogContent>
             </Dialog>
         </div>
     );

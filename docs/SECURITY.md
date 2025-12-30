@@ -412,70 +412,43 @@ SECURITY DEFINER
 - **Cross-org data exposure**: Bloqueado
 - **RLS bypass via RPC**: Prevenido con verificação explícita de autorização
 
-### Edge Function: send-push Authorization (Sprint 3.5.7)
+### Edge Function: send-push Hardening (v3.5.7)
 
-**Problema identificado:** A Edge Function `send-push` verificava JWT (via `verify_jwt=true` no config.toml), mas não validava se o caller autenticado tinha permissão para enviar notificações ao `user_id`/`org_id` especificado.
+**Problema identificado:** A Edge Function `send-push` permitia que usuários autenticados enviassem notificações para qualquer `user_id` do sistema (cross-tenant spam).
 
-**Vulnerabilidades corrigidas:**
-- Qualquer usuário autenticado podia enviar push para qualquer outro usuário
-- Possível spam de notificações
-- Possível phishing via URLs maliciosas nas notificações
-- Violação de privacidade cross-org
+#### Matriz de Autorização (Hardened)
 
-**Correções implementadas:**
+A autorização é verificada em tempo de execução via `adminClient` (bypassing RLS apenas para metadados).
 
-```typescript
-// 1. Extrair e validar token JWT
-const authHeader = req.headers.get('authorization');
-const token = authHeader.replace('Bearer ', '');
-const { data: { user: authUser } } = await supabase.auth.getUser(token);
+| Alvo | Contexto do Caller | Resultado | Ação Adicional |
+| :--- | :--- | :--- | :--- |
+| **Si mesmo** | `target_user_id == caller_id` | ✅ Permitido | - |
+| **Broadcast Org** | `target_org_id == caller_org_id` | ✅ Permitido | - |
+| **Broadcast Org** | `target_org_id != caller_org_id` | ❌ **403 Forbidden** | Audit Log: `cross_org` |
+| **Outro Usuário** | `target_org_id == caller_org_id` AND role ∈ {admin, owner} | ✅ Permitido | - |
+| **Outro Usuário** | `target_org_id == caller_org_id` AND role == member | ❌ **403 Forbidden** | Audit Log: `not_privileged` |
+| **Outro Usuário** | `target_org_id != caller_org_id` | ❌ **403 Forbidden** | Audit Log: `cross_org` |
 
-// 2. Obter org_id do caller
-const { data: callerProfile } = await supabase
-  .from('profiles')
-  .select('org_id')
-  .eq('user_id', authUser.id)
-  .single();
+#### Sanitização de URLs
 
-// 3. Validar envio para outro user_id
-if (user_id && user_id !== authUser.id) {
-  // Verificar se target está na mesma org
-  const { data: targetProfile } = await supabase
-    .from('profiles')
-    .select('org_id')
-    .eq('user_id', user_id)
-    .single();
+Para prevenir ataques de phishing, esquemas de URL são restritos:
+- ✅ **Caminhos relativos:** `/app/...`
+- ✅ **URLs absolutas:** Somente `https://...`
+- ❌ **Bloqueados:** `http://`, `javascript:`, `data:`, `//` (schemaless).
 
-  if (targetProfile.org_id !== callerProfile.org_id) {
-    return Response(403, 'Unauthorized: cannot send to other orgs');
-  }
+#### Rate Limiting
 
-  // Verificar se caller é admin/owner
-  const hasAdminRole = await supabase.rpc('has_role', { _user_id: authUser.id, _role: 'admin' });
-  const hasOwnerRole = await supabase.rpc('has_role', { _user_id: authUser.id, _role: 'owner' });
+Implementado via RPC `check_push_rate_limit`:
+- **Retorno:** `429 Too Many Requests` se o limite for atingido.
+- **Escopo:** Por Usuário e por Organização.
 
-  if (!hasAdminRole && !hasOwnerRole) {
-    return Response(403, 'Unauthorized: requires admin/owner role');
-  }
-}
+#### Observabilidade (Privacy-First)
 
-// 4. Validar broadcast para org_id
-if (org_id && org_id !== callerProfile.org_id) {
-  return Response(403, 'Unauthorized: cannot send to other orgs');
-}
-```
-
-**Regras de autorização:**
-
-| Cenário | Autorização Necessária |
-|---------|------------------------|
-| Enviar para si mesmo (`user_id === auth.uid`) | ✅ Qualquer usuário autenticado |
-| Enviar para outro usuário da mesma org | ✅ Admin ou Owner da org |
-| Enviar para usuário de outra org | ❌ Bloqueado |
-| Broadcast para própria org | ✅ Membro da org |
-| Broadcast para outra org | ❌ Bloqueado |
-
-**Arquivo corrigido:** `supabase/functions/send-push/index.ts`
+Os logs da Edge Function **NÃO** contêm PII:
+- 🚫 Sem tokens JWT ou secrets
+- 🚫 Sem endpoints de assinatura (endpoints de push)
+- 🚫 Sem o conteúdo completo (`title`/`body`) das mensagens
+- ✅ Registramos: `caller_user_id`, `caller_org_id`, `target_type`, `success`, `reason`, `title_len`, `body_len`.
 
 ## RLS Regression Checks
 

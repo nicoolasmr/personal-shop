@@ -128,8 +128,8 @@ export async function fetchActiveInstallments(orgId: string, userId: string): Pr
 }
 
 export async function fetchInstallmentsSummary(orgId: string, userId: string): Promise<{ total_active_installments: number; total_monthly_commitment: number; total_remaining_amount: number }> {
-    // Mock implementation for now as RPC wasn't provided in original request context
-    return { total_active_installments: 0, total_monthly_commitment: 0, total_remaining_amount: 0 };
+    const { data } = await supabase.rpc('get_installments_summary', { p_org_id: orgId, p_user_id: userId });
+    return data?.[0] || { total_active_installments: 0, total_monthly_commitment: 0, total_remaining_amount: 0 };
 }
 
 
