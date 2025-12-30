@@ -34,15 +34,29 @@ initSentry();
     }
 })();
 
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/react-query";
 import { syncFeatureFlags } from './lib/flags';
 
 // Initialize flags
-syncFeatureFlags().then(() => {
+// Initialize flags with timeout to prevent blocking render indefinitely
+const initApp = async () => {
+    const timeout = new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+        await Promise.race([syncFeatureFlags(), timeout]);
+    } catch (e) {
+        console.error("Flag sync failed, proceeding with defaults", e);
+    }
+
     createRoot(document.getElementById("root")!).render(
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <RuntimeErrorBoundary>
-                <App />
-            </RuntimeErrorBoundary>
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+                <RuntimeErrorBoundary>
+                    <App />
+                </RuntimeErrorBoundary>
+            </ThemeProvider>
+        </QueryClientProvider>
     );
-});
+};
+
+initApp();

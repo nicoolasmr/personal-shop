@@ -9,7 +9,7 @@ export default defineConfig({
     workers: process.env.CI ? 1 : undefined,
     reporter: 'line',
     use: {
-        baseURL: 'http://localhost:5173',
+        baseURL: 'http://localhost:5179',
         trace: 'on-first-retry',
     },
     projects: [
@@ -18,9 +18,10 @@ export default defineConfig({
             use: { ...devices['Desktop Chrome'] },
         },
     ],
+    /* Run your local dev server before starting the tests */
     webServer: {
-        command: 'npm run build && npm run preview',
-        url: 'http://localhost:4173',
+        command: 'npm run dev -- --port 5179',
+        url: 'http://localhost:5179',
         reuseExistingServer: !process.env.CI,
         timeout: 180000,
     },
