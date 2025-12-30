@@ -10,7 +10,7 @@ import { TransactionForm } from '@/components/finance/TransactionForm';
 import { Progress } from '@/components/ui/progress';
 
 // Placeholders for components not yet created but referenced
-const FinanceSummary = ({ summary }: any) => (
+const FinanceSummary = ({ summary }: { summary: { total_income: number; total_expense: number; balance: number } }) => (
     <div className="grid grid-cols-3 gap-4">
         <Card>
             <CardHeader className="p-4 pb-2"><CardTitle className="text-sm">Receitas</CardTitle></CardHeader>
@@ -29,7 +29,7 @@ const FinanceSummary = ({ summary }: any) => (
     </div>
 );
 
-const TransactionCard = ({ transaction }: any) => (
+const TransactionCard = ({ transaction }: { transaction: { description: string; transaction_date: string; type: 'income' | 'expense'; amount: number } }) => (
     <div className="flex items-center justify-between p-3 border rounded-lg bg-card mb-2">
         <div>
             <div className="font-medium">{transaction.description}</div>
@@ -41,9 +41,9 @@ const TransactionCard = ({ transaction }: any) => (
     </div>
 );
 
-const GoalsList = ({ goals }: any) => (
+const GoalsList = ({ goals }: { goals: Array<{ id: string; name: string; target_amount: number; current_amount: number; progress: number }> | undefined }) => (
     <div className="grid gap-4 md:grid-cols-2">
-        {goals?.map((goal: any) => (
+        {goals?.map((goal) => (
             <Card key={goal.id}>
                 <CardHeader className="p-4"><CardTitle className="text-base">{goal.name}</CardTitle><CardDescription>Meta: {formatCurrency(goal.target_amount)}</CardDescription></CardHeader>
                 <CardContent className="p-4 pt-0">
