@@ -98,6 +98,21 @@ export interface Database {
                 Row: { id: string; event_id: string; user_id: string; org_id: string; remind_at: string; channel: string; created_at: string };
                 Insert: { id?: string; event_id: string; user_id?: string; org_id?: string; remind_at: string; channel?: string; created_at?: string };
                 Update: { id?: string; event_id?: string; user_id?: string; org_id?: string; remind_at?: string; channel?: string; created_at?: string };
+            },
+            whatsapp_links: {
+                Row: { id: string; user_id: string; org_id: string; phone_hash: string; phone_last4: string | null; verified: boolean; created_at: string; updated_at: string };
+                Insert: { id?: string; user_id: string; org_id: string; phone_hash: string; phone_last4?: string | null; verified?: boolean; created_at?: string; updated_at?: string };
+                Update: { id?: string; user_id?: string; org_id?: string; phone_hash?: string; phone_last4?: string | null; verified?: boolean; created_at?: string; updated_at?: string };
+            },
+            whatsapp_messages_log: {
+                Row: { id: string; user_id: string | null; org_id: string | null; direction: string; message_type: string; intent: string | null; status: string; error_code: string | null; created_at: string };
+                Insert: { id?: string; user_id?: string | null; org_id?: string | null; direction: string; message_type: string; intent?: string | null; status: string; error_code?: string | null; created_at?: string };
+                Update: { id?: string; user_id?: string | null; org_id?: string | null; direction?: string; message_type?: string; intent?: string | null; status?: string; error_code?: string | null; created_at?: string };
+            },
+            whatsapp_conversation_state: {
+                Row: { id: string; user_id: string; phone_hash: string; state: Json; last_interaction_at: string; updated_at: string };
+                Insert: { id?: string; user_id: string; phone_hash: string; state?: Json; last_interaction_at?: string; updated_at?: string };
+                Update: { id?: string; user_id?: string; phone_hash?: string; state?: Json; last_interaction_at?: string; updated_at?: string };
             };
         };
         Functions: {
