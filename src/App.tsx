@@ -32,9 +32,21 @@ const NotFound = lazy(() => import("./pages/Home")); // Fallback to Home or spec
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            retry: 1,
-            refetchOnWindowFocus: false,
+            retry: (failureCount, error: any) => {
+                // Don't retry on 404 or Unauthorized
+                if (error?.status === 404 || error?.status === 401) return false;
+                return failureCount < 3;
+            },
+            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+            staleTime: 1000 * 60 * 5, // 5 minutes (more offline-friendly)
+            gcTime: 1000 * 60 * 60 * 24, // Keep in cache for 24h
+            refetchOnWindowFocus: true,
+            refetchOnReconnect: 'always',
         },
+        mutations: {
+            retry: 2,
+            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+        }
     },
 });
 
