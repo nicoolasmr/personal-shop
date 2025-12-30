@@ -64,7 +64,7 @@ export function getAchievementsWithStatus(userAchievements: UserAchievement[], p
     const unlockedMap = new Map(userAchievements.map(ua => [ua.achievement_id, ua.unlocked_at]));
     return ACHIEVEMENTS.map(achievement => {
         const unlocked = unlockedMap.has(achievement.id);
-        let currentProgress = 0;
+        const currentProgress = 0;
         // Calculate progress based on achievement.id (streak_3, checkins_50, etc.)
         return { ...achievement, unlocked, unlockedAt: unlockedMap.get(achievement.id), progress: Math.round(currentProgress) };
     });

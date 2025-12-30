@@ -181,7 +181,7 @@ export async function syncFinanceGoalsWithTransactions(orgId: string, userId: st
     // This is simplified mockup
     const results: SyncResult[] = [];
     for (const goal of goals.filter(g => g.is_active)) {
-        let newAmount = 0; // Logic to sum transactions would go here
+        const newAmount = 0; // Logic to sum transactions would go here
         // Calculate based on goal.type: savings, expense_limit, income_target
         // Update if changed
         await supabase.from('finance_goals').update({ current_amount: newAmount }).eq('id', goal.id);
