@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
@@ -22,6 +22,7 @@ const TenantContext = createContext<TenantContextType>({
     refresh: async () => { },
 });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTenantContext = () => useContext(TenantContext);
 
 export const TenantProvider = ({ children }: { children: ReactNode }) => {

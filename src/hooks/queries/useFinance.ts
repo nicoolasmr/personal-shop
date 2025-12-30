@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast'; // Using our shim/wrapper
 import {
     fetchTransactions, createTransaction, updateTransaction, deleteTransaction,

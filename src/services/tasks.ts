@@ -138,7 +138,7 @@ export async function moveTask(orgId: string, userId: string, payload: MoveTaskP
     if (!task) throw new Error('Tarefa não encontrada');
 
     // 2. If changing status, update it
-    let sortOrder = task.sort_order;
+    const sortOrder = task.sort_order;
 
     if (newStatus && newStatus !== task.status) {
         await updateTask(orgId, userId, taskId, { status: newStatus });

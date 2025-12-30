@@ -2,7 +2,7 @@
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Home, CheckSquare, Target, BarChart2, DollarSign, Calendar, User, Settings, LogOut } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext'; // Updated path reference
+import { useAuth } from '@/hooks/useAuth'; // Updated path reference
 import { Button } from '@/components/ui/button';
 
 export function Sidebar() { // Simplified Sidebar for compilation

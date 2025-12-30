@@ -75,6 +75,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTenant() {
     const context = useContext(TenantContext);
     if (context === undefined) {

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTenant } from '@/hooks/useTenant';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import * as goalsService from '@/services/goals';
 import { syncFinanceGoalToGoal } from '@/services/goalFinanceSync'; // IMPORTANT: Use correct import

@@ -2,7 +2,7 @@
 import { Menu, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export function Header({ onMenuClick }: { onMenuClick: () => void }) {
     const { user } = useAuth();
