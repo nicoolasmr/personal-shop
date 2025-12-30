@@ -1,14 +1,40 @@
+import { useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useNotifications, usePushNotifications } from '@/hooks/useNotifications';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, Monitor, Bell, Smartphone, Bug } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; // Assuming tabs exist
+import { Moon, Sun, Monitor, Bell, Smartphone, Bug, MessageCircle, RefreshCw, Trash2, Copy } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useFeatureFlag } from '@/lib/flags';
+import { useWhatsApp } from '@/hooks/useWhatsApp';
+import { useAuth } from '@/hooks/useAuth';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
     const { theme, setTheme } = useTheme();
     const { requestPermission, sendNotification } = useNotifications();
     const { isSubscribed, toggle: togglePush, sendTest: sendTestPush } = usePushNotifications();
+
+    // WhatsApp Logic
+    const waEnabled = useFeatureFlag('whatsapp_enabled');
+    const { user } = useAuth();
+    const orgId = user?.app_metadata?.org_id || '';
+    const { linkStatus, isLoading: waLoading, generateCode, unlink } = useWhatsApp(orgId as string, !!waEnabled && !!orgId);
+
+    const [generatedCode, setGeneratedCode] = useState<{ code: string, expires_at: string } | null>(null);
+
+    const handleGenerateCode = async () => {
+        const data = await generateCode.mutateAsync();
+        setGeneratedCode(data);
+    };
+
+    const copyCode = () => {
+        if (generatedCode) {
+            navigator.clipboard.writeText(generatedCode.code);
+            toast.success('Código copiado!');
+        }
+    };
 
     return (
         <div className="space-y-6">

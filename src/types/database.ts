@@ -113,6 +113,11 @@ export interface Database {
                 Row: { id: string; user_id: string; phone_hash: string; state: Json; last_interaction_at: string; updated_at: string };
                 Insert: { id?: string; user_id: string; phone_hash: string; state?: Json; last_interaction_at?: string; updated_at?: string };
                 Update: { id?: string; user_id?: string; phone_hash?: string; state?: Json; last_interaction_at?: string; updated_at?: string };
+            },
+            whatsapp_verification_codes: {
+                Row: { code: string; user_id: string; org_id: string; created_at: string; expires_at: string };
+                Insert: { code: string; user_id?: string; org_id: string; created_at?: string; expires_at: string };
+                Update: { code?: string; user_id?: string; org_id?: string; created_at?: string; expires_at?: string };
             };
         };
         Functions: {
