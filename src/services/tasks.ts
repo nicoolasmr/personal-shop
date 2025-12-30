@@ -67,6 +67,19 @@ export async function listTasks(orgId: string): Promise<TaskWithSubtasks[]> {
     })) as TaskWithSubtasks[];
 }
 
+export async function listTasksWithDueDate(orgId: string, startDate: string, endDate: string): Promise<Task[]> {
+    const { data: tasks, error } = await db
+        .from('tasks')
+        .select('*')
+        .eq('org_id', orgId)
+        .eq('archived', false)
+        .gte('due_date', startDate)
+        .lte('due_date', endDate);
+
+    if (error) throw new Error('Erro ao buscar tarefas por data');
+    return tasks as Task[];
+}
+
 // =============================================================================
 // SINGLE TASK
 // =============================================================================

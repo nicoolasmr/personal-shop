@@ -88,6 +88,16 @@ export interface Database {
                 Row: { id: string; org_id: string; user_id: string; endpoint: string; p256dh: string; auth: string; created_at: string };
                 Insert: { id?: string; org_id: string; user_id: string; endpoint: string; p256dh: string; auth: string; created_at?: string };
                 Update: { id?: string; org_id?: string; user_id?: string; endpoint?: string; p256dh?: string; auth?: string; created_at?: string };
+            },
+            calendar_events: {
+                Row: { id: string; user_id: string; org_id: string; title: string; description: string | null; location: string | null; start_at: string; end_at: string; all_day: boolean; source: string; created_at: string; updated_at: string };
+                Insert: { id?: string; user_id?: string; org_id?: string; title: string; description?: string | null; location?: string | null; start_at: string; end_at: string; all_day?: boolean; source?: string; created_at?: string; updated_at?: string };
+                Update: { id?: string; user_id?: string; org_id?: string; title?: string; description?: string | null; location?: string | null; start_at?: string; end_at?: string; all_day?: boolean; source?: string; created_at?: string; updated_at?: string };
+            },
+            calendar_reminders: {
+                Row: { id: string; event_id: string; user_id: string; org_id: string; remind_at: string; channel: string; created_at: string };
+                Insert: { id?: string; event_id: string; user_id?: string; org_id?: string; remind_at: string; channel?: string; created_at?: string };
+                Update: { id?: string; event_id?: string; user_id?: string; org_id?: string; remind_at?: string; channel?: string; created_at?: string };
             };
         };
         Functions: {

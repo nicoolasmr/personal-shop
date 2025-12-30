@@ -4,9 +4,12 @@ import { cn } from '@/lib/utils';
 import { Home, CheckSquare, Target, BarChart2, DollarSign, Calendar, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth'; // Updated path reference
 import { Button } from '@/components/ui/button';
+import { useFeatureFlag } from '@/lib/flags';
 
 export function Sidebar() { // Simplified Sidebar for compilation
     const { signOut } = useAuth(); // Assuming AuthContext/hook available
+
+    const calendarEnabled = useFeatureFlag('agenda_enabled');
 
     // Using NavLinks for active state management automatically
     const navItems = [
@@ -15,7 +18,7 @@ export function Sidebar() { // Simplified Sidebar for compilation
         { to: '/app/goals', icon: Target, label: 'Metas & Hábitos' },
         { to: '/app/finance', icon: DollarSign, label: 'Finanças' },
         { to: '/app/stats', icon: BarChart2, label: 'Estatísticas' },
-        { to: '/app/calendar', icon: Calendar, label: 'Agenda' },
+        ...(calendarEnabled ? [{ to: '/app/calendar', icon: Calendar, label: 'Agenda' }] : []),
         { to: '/app/profile', icon: User, label: 'Perfil' },
         { to: '/app/settings', icon: Settings, label: 'Configurações' },
     ];
