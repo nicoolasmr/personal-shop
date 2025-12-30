@@ -7,6 +7,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { crypto } from "https://deno.land/std@0.177.0/crypto/mod.ts";
 import { encodeHex } from "https://deno.land/std@0.177.0/encoding/hex.ts";
+import { classifyIntent } from './intents.ts';
+import { handleListAgenda, handleCreateEvent } from './calendar.ts';
 
 const WHATSAPP_SALT = Deno.env.get('WHATSAPP_SALT') || 'default-secret-salt';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -137,11 +139,55 @@ serve(async (req) => {
     if (link && link.verified) {
       console.log(`Authenticated message from User ${link.user_id}: ${messageBody}`);
 
-      // TODO: Sprint 6 (Part 3) - Add Intent Classification here
-      // e.g. "Agendar reunião amanhã" -> Calendar Service
+      // 1. Classify Intent
+      const { type, payload } = classifyIntent(messageBody);
+      let replyText = "";
 
-      // For now, Echo
-      return new Response(JSON.stringify({ reply: `Recebido: ${messageBody}` }), { status: 200 });
+      switch (type) {
+        case 'LIST_AGENDA':
+          replyText = await handleListAgenda(
+            supabase,
+            link.user_id,
+            link.org_id,
+            payload.period
+          );
+          break;
+
+        case 'CREATE_EVENT':
+          replyText = await handleCreateEvent(
+            supabase,
+            link.user_id,
+            link.org_id,
+            payload.raw
+          );
+          break;
+
+        case 'HELP':
+          replyText = "🤖 *Comandos do VIDA360:*\n\n" +
+            "📅 *Agenda*\n" +
+            "• 'Minha agenda hoje'\n" +
+            "• 'O que tenho amanhã?'\n\n" +
+            "✍️ *Agendamento*\n" +
+            "• 'Agendar Dentista amanhã 15h'\n" +
+            "• 'Marcar Reunião hoje 14:30'";
+          break;
+
+        case 'LINK_CODE':
+          replyText = "Você já está conectado! 👍";
+          break;
+
+        case 'UNKNOWN':
+        default:
+          // Fallback / AI Chat (Future)
+          // For now, just generic.
+          replyText = "Desculpe, não entendi. Digite *ajuda* para ver os comandos.";
+          break;
+      }
+
+      // Return the Reply
+      // In Prod: Call Meta Send API.
+      // For Dev: returning JSON to be seen in curl.
+      return new Response(JSON.stringify({ reply: replyText }), { status: 200 });
     }
 
     return new Response('OK', { status: 200 });
