@@ -30,10 +30,14 @@ export function TransactionForm({ onSuccess }: TransactionFormProps) {
         setLoading(true);
         try {
             await createTransaction({
-                ...formData,
+                description: formData.description,
                 amount: parseFloat(formData.amount),
+                type: formData.type,
+                category_id: formData.category_id,
+                payment_method: formData.payment_method,
+                transaction_date: formData.transaction_date,
                 installment_count: parseInt(formData.installment_count),
-            } as any);
+            });
             onSuccess();
         } catch (error) {
             console.error(error);

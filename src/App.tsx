@@ -32,9 +32,10 @@ const NotFound = lazy(() => import("./pages/Home")); // Fallback to Home or spec
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            retry: (failureCount, error: any) => {
+            retry: (failureCount, error: unknown) => {
                 // Don't retry on 404 or Unauthorized
-                if (error?.status === 404 || error?.status === 401) return false;
+                const err = error as { status?: number };
+                if (err?.status === 404 || err?.status === 401) return false;
                 return failureCount < 3;
             },
             retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),

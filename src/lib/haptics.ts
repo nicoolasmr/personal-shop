@@ -1,56 +1,91 @@
 // =============================================================================
-// Haptic Feedback Utilities
+// Haptics Library - Cross-platform haptic feedback
 // =============================================================================
 
-type HapticPattern = 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' | 'selection';
-
-const PATTERNS: Record<HapticPattern, number | number[]> = {
-    light: 10,
-    medium: 25,
-    heavy: 50,
-    success: [10, 50, 30, 50, 10],
-    warning: [30, 100, 30],
-    error: [50, 100, 50, 100, 50],
-    selection: 5,
-};
-
+/**
+ * Check if haptic feedback is supported
+ */
 export function isHapticSupported(): boolean {
-    return typeof navigator !== 'undefined' && 'vibrate' in navigator;
+    return 'vibrate' in navigator;
 }
 
-export function triggerHaptic(pattern: HapticPattern = 'medium'): boolean {
+/**
+ * Trigger a light haptic feedback
+ */
+export function light(): boolean {
     if (!isHapticSupported()) return false;
-    try {
-        return navigator.vibrate(PATTERNS[pattern]);
-    } catch (error) {
-        console.warn('Haptic feedback failed:', error);
-        return false;
-    }
+    return navigator.vibrate(10);
 }
 
-export function triggerCustomHaptic(pattern: number | number[]): boolean {
+/**
+ * Trigger a medium haptic feedback
+ */
+export function medium(): boolean {
     if (!isHapticSupported()) return false;
-    try {
-        return navigator.vibrate(pattern);
-    } catch (error) {
-        console.warn('Custom haptic feedback failed:', error);
-        return false;
-    }
+    return navigator.vibrate(20);
 }
 
-export function stopHaptic(): void {
-    if (isHapticSupported()) navigator.vibrate(0);
+/**
+ * Trigger a heavy haptic feedback
+ */
+export function heavy(): boolean {
+    if (!isHapticSupported()) return false;
+    return navigator.vibrate(30);
 }
 
+/**
+ * Trigger a success haptic pattern
+ */
+export function success(): boolean {
+    if (!isHapticSupported()) return false;
+    return navigator.vibrate([10, 50, 10]);
+}
+
+/**
+ * Trigger a warning haptic pattern
+ */
+export function warning(): boolean {
+    if (!isHapticSupported()) return false;
+    return navigator.vibrate([20, 100, 20]);
+}
+
+/**
+ * Trigger an error haptic pattern
+ */
+export function error(): boolean {
+    if (!isHapticSupported()) return false;
+    return navigator.vibrate([30, 100, 30, 100, 30]);
+}
+
+/**
+ * Trigger a selection haptic feedback
+ */
+export function selection(): boolean {
+    if (!isHapticSupported()) return false;
+    return navigator.vibrate(5);
+}
+
+/**
+ * Trigger a custom haptic pattern
+ */
+export function custom(pattern: number | number[]): boolean {
+    if (!isHapticSupported()) return false;
+    return navigator.vibrate(pattern);
+}
+
+/**
+ * Haptics object with all methods
+ */
 export const haptics = {
-    light: () => triggerHaptic('light'),
-    medium: () => triggerHaptic('medium'),
-    heavy: () => triggerHaptic('heavy'),
-    success: () => triggerHaptic('success'),
-    warning: () => triggerHaptic('warning'),
-    error: () => triggerHaptic('error'),
-    selection: () => triggerHaptic('selection'),
-    custom: triggerCustomHaptic,
-    stop: stopHaptic,
     isSupported: isHapticSupported,
+    light,
+    medium,
+    heavy,
+    success,
+    warning,
+    error,
+    selection,
+    custom,
 };
+
+export default haptics;
