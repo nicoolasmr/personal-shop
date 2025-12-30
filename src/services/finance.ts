@@ -56,7 +56,7 @@ export async function createTransaction(orgId: string, userId: string, payload: 
     return data;
 }
 
-export async function updateTransaction(orgId: string, userId: string, transactionId: string, payload: any): Promise<Transaction> {
+export async function updateTransaction(orgId: string, userId: string, transactionId: string, payload: Partial<CreateTransactionPayload>): Promise<Transaction> {
     const { data, error } = await supabase.from('transactions').update(payload).eq('id', transactionId).eq('org_id', orgId).select().single();
     if (error) throw error;
     return data;
@@ -147,7 +147,7 @@ export async function createFinanceGoal(orgId: string, userId: string, payload: 
     return data;
 }
 
-export async function updateFinanceGoal(orgId: string, userId: string, goalId: string, payload: any): Promise<FinanceGoal> {
+export async function updateFinanceGoal(orgId: string, userId: string, goalId: string, payload: Partial<CreateFinanceGoalPayload>): Promise<FinanceGoal> {
     const { data, error } = await supabase.from('finance_goals').update(payload).eq('id', goalId).eq('org_id', orgId).select().single();
     if (error) throw error;
     return data;

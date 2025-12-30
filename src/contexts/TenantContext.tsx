@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
@@ -31,7 +31,7 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         if (!user) {
             setOrg(null);
             setProfile(null);
@@ -44,11 +44,13 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
             setError(null);
 
             // Fetch profile
-            const { data: profileData, error: profileError } = await supabase
+            const { data, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('user_id', user.id)
                 .single();
+
+            const profileData = data as Profile | null;
 
             if (profileError) {
                 // If profile doesn't exist, we might need to handle it (e.g. redirect to on-boarding or error)
@@ -57,29 +59,30 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
 
             setProfile(profileData);
 
-            // Fetch org details using org_id from profile
-            const { data: orgData, error: orgError } = await supabase
-                .from('orgs')
-                .select('*')
-                .eq('id', profileData.org_id)
-                .single();
+            if (profileData) {
+                // Fetch org details using org_id from profile
+                const { data: orgData, error: orgError } = await supabase
+                    .from('orgs')
+                    .select('*')
+                    .eq('id', profileData.org_id)
+                    .single();
 
-            if (orgError) throw orgError;
-
-            setOrg(orgData);
-        } catch (err: any) {
+                if (orgError) throw orgError;
+                setOrg(orgData);
+            }
+        } catch (err) {
             console.error('Error fetching tenant data:', err);
-            setError(err);
+            setError(err instanceof Error ? err : new Error(String(err)));
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
 
     useEffect(() => {
         if (!authLoading) {
             fetchData();
         }
-    }, [user, authLoading]);
+    }, [authLoading, fetchData]);
 
     return (
         <TenantContext.Provider value={{ org, profile, loading, error, refresh: fetchData }}>

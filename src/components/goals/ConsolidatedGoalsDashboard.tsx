@@ -2,9 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Target, TrendingUp, Wallet, CheckCircle2, ShieldCheck } from 'lucide-react';
 
+import { Goal } from '@/types/goals';
+import { FinanceGoal } from '@/types/finance';
+
 interface ConsolidatedGoalsDashboardProps {
-    goals: any[];
-    financeGoals: any[];
+    goals: Goal[];
+    financeGoals: FinanceGoal[];
 }
 
 export const ConsolidatedGoalsDashboard = ({ goals, financeGoals }: ConsolidatedGoalsDashboardProps) => {

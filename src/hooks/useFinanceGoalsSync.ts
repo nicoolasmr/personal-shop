@@ -2,7 +2,7 @@
 // useFinanceGoalsSync - Hook para sincronizar metas financeiras com transações
 // =============================================================================
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGoals } from './queries/useGoals';
 import { useFinance } from './queries/useFinance';
@@ -19,9 +19,9 @@ export function useFinanceGoalsSync() {
     const queryClient = useQueryClient();
 
     // Get financial goals (savings or financial type)
-    const financialGoals = goals?.filter(g =>
+    const financialGoals = useMemo(() => goals?.filter(g =>
         g.type === 'financial' || g.type === 'savings'
-    ) || [];
+    ) || [], [goals]);
 
     // Sync function
     const syncGoal = useCallback(async (goalId: string, amount: number) => {

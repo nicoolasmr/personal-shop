@@ -35,7 +35,7 @@ export const initSentry = () => {
     console.log(`[Observability] Sentry initialized in ${mode} mode.`);
 };
 
-export const captureException = (error: any, context?: any) => {
+export const captureException = (error: unknown, context?: Record<string, unknown>) => {
     Sentry.captureException(error, { extra: context });
 };
 

@@ -1,7 +1,7 @@
 // =============================================================================
 // Supabase Client
 // =============================================================================
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import { SUPABASE_CONFIG, isSupabaseConfigured } from '@/config/supabase';
 
@@ -15,4 +15,4 @@ export const supabase = (supabaseConfigured
             detectSessionInUrl: true,
         },
     })
-    : (null as any));
+    : (null as unknown as SupabaseClient<Database>));

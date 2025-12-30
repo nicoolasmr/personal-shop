@@ -67,7 +67,156 @@ export async function listTasks(orgId: string): Promise<TaskWithSubtasks[]> {
     })) as TaskWithSubtasks[];
 }
 
-// ... (funções GET SINGLE TASK, CONSTANTS, CREATE, UPDATE, ARCHIVE, MOVE com gap ordering)
+// =============================================================================
+// SINGLE TASK
+// =============================================================================
+
+export async function getTask(taskId: string): Promise<TaskWithSubtasks> {
+    const { data: task, error } = await db.from('tasks').select('*').eq('id', taskId).single();
+    if (error) throw new Error('Tarefa não encontrada');
+
+    const { data: subtasks } = await db.from('task_subtasks').select('*').eq('task_id', taskId).order('created_at');
+    const { data: attachments } = await db.from('task_attachments').select('*').eq('task_id', taskId).order('created_at');
+
+    return {
+        ...task,
+        subtasks: subtasks || [],
+        attachments: attachments || []
+    } as TaskWithSubtasks;
+}
+
+// =============================================================================
+// UPDATE / DELETE / ARCHIVE
+// =============================================================================
+
+export async function updateTask(orgId: string, userId: string, taskId: string, payload: UpdateTaskPayload): Promise<Task> {
+    const { data, error } = await db
+        .from('tasks')
+        .update(payload)
+        .eq('id', taskId)
+        .eq('org_id', orgId)
+        .select()
+        .single();
+
+    if (error) throw new Error('Erro ao atualizar tarefa');
+    await logAudit(orgId, userId, 'task_updated', 'task', taskId, payload as Record<string, unknown>);
+    return data as Task;
+}
+
+export async function deleteTask(orgId: string, userId: string, taskId: string): Promise<void> {
+    // Delete attachments storage first (optional, but good practice)
+    // For now, just delete DB record, cascade will handle subtasks/attachments references if configured,
+    // otherwise we might need to delete them manually. Assuming Supabase Cascade is on.
+    const { error } = await db.from('tasks').delete().eq('id', taskId).eq('org_id', orgId);
+    if (error) throw new Error('Erro ao excluir tarefa');
+    await logAudit(orgId, userId, 'task_deleted', 'task', taskId, {});
+}
+
+export async function archiveTask(orgId: string, userId: string, taskId: string): Promise<Task> {
+    const { data, error } = await db
+        .from('tasks')
+        .update({ archived: true })
+        .eq('id', taskId)
+        .eq('org_id', orgId)
+        .select()
+        .single();
+
+    if (error) throw new Error('Erro ao arquivar tarefa');
+    await logAudit(orgId, userId, 'task_archived', 'task', taskId, {});
+    return data as Task;
+}
+
+// =============================================================================
+// MOVE (Status + Sort Order)
+// =============================================================================
+
+export async function moveTask(orgId: string, userId: string, payload: MoveTaskPayload): Promise<void> {
+    const { taskId, newStatus, newIndex } = payload;
+
+    // 1. Get task to verify
+    const { data: task } = await db.from('tasks').select('*').eq('id', taskId).single();
+    if (!task) throw new Error('Tarefa não encontrada');
+
+    // 2. If changing status, update it
+    let sortOrder = task.sort_order;
+
+    if (newStatus && newStatus !== task.status) {
+        await updateTask(orgId, userId, taskId, { status: newStatus });
+    }
+
+    // 3. Handle Reordering (Simplified Gap Logic or direct update)
+    // For this implementation, we will fetch neighbors to calculate new sort_order
+    // This is a naive implementation. For production high-volume, consider fractional indexing or linked list.
+
+    const targetStatus = newStatus || task.status;
+    const { data: siblings } = await db
+        .from('tasks')
+        .select('id, sort_order')
+        .eq('org_id', orgId)
+        .eq('status', targetStatus)
+        .eq('archived', false)
+        .neq('id', taskId)
+        .order('sort_order', { ascending: true }); // ASC to find index
+
+    const safeSiblings = siblings || [];
+
+    // Calculate new sort_order based on newIndex
+    // If newIndex is 0, put before first
+    // If newIndex is last, put after last
+    // If middle, average of prev and next
+
+    let newSortOrder = 0;
+
+    if (safeSiblings.length === 0) {
+        newSortOrder = GAP_SIZE;
+    } else {
+        if (newIndex <= 0) {
+            // Before first
+            newSortOrder = safeSiblings[0].sort_order / 2;
+        } else if (newIndex >= safeSiblings.length) {
+            // After last
+            newSortOrder = safeSiblings[safeSiblings.length - 1].sort_order + GAP_SIZE;
+        } else {
+            // Between
+            const prev = safeSiblings[newIndex - 1].sort_order;
+            const next = safeSiblings[newIndex].sort_order;
+            newSortOrder = (prev + next) / 2;
+        }
+    }
+
+    await db.from('tasks').update({ sort_order: newSortOrder }).eq('id', taskId);
+}
+
+export async function getMaxSortOrder(orgId: string, status: string): Promise<number> {
+    const { data } = await db
+        .from('tasks')
+        .select('sort_order')
+        .eq('org_id', orgId)
+        .eq('status', status)
+        .eq('archived', false)
+        .order('sort_order', { ascending: false })
+        .limit(1)
+        .single();
+    return data?.sort_order || 0;
+}
+
+export async function deleteSubtask(orgId: string, userId: string, subtaskId: string): Promise<void> {
+    const { error } = await db.from('task_subtasks').delete().eq('id', subtaskId).eq('org_id', orgId);
+    if (error) throw new Error('Erro ao excluir subtarefa');
+}
+
+export async function deleteAttachment(orgId: string, userId: string, attachmentId: string): Promise<void> {
+    // 1. Get attachment to find path
+    const { data: att } = await db.from('task_attachments').select('*').eq('id', attachmentId).single();
+    if (!att) return;
+
+    // 2. Delete file
+    await db.storage.from('task-attachments').remove([att.file_path]);
+
+    // 3. Delete record
+    const { error } = await db.from('task_attachments').delete().eq('id', attachmentId).eq('org_id', orgId);
+    if (error) throw new Error('Erro ao excluir anexo');
+}
 
 const GAP_SIZE = 1000;
 const MIN_GAP = 2;

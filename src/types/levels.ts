@@ -36,6 +36,7 @@ const XP_PER_LEVEL: number[] = [
     9450,   // Level 19
     10450,  // Level 20
 ];
+export const LEVELS = XP_PER_LEVEL;
 
 /**
  * Calculate level info from total XP

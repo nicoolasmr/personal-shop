@@ -14,8 +14,10 @@ interface PushPayload {
     org_id?: string;
 }
 
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+
 // B) Helper: Audit Log
-async function recordForbiddenAttempt(adminClient: any, caller: { id: string }, orgId: string, reason: string, targetType: string) {
+async function recordForbiddenAttempt(adminClient: SupabaseClient, caller: { id: string }, orgId: string, reason: string, targetType: string) {
     try {
         await adminClient.from('audit_log').insert({
             user_id: caller.id,
@@ -282,7 +284,14 @@ serve(async (req) => {
             url: sanitizedUrl || '/app/home'
         };
 
-        const results = await Promise.all(subs.map(async (sub: any) => {
+        interface PushSubscriptionRow {
+            id: string;
+            endpoint: string;
+            p256dh: string;
+            auth: string;
+        }
+
+        const results = await Promise.all(subs.map(async (sub: PushSubscriptionRow) => {
             const res = await sendPushNotification(
                 { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
                 payload, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY

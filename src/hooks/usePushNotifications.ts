@@ -125,7 +125,7 @@ export function usePushNotifications() {
             // Subscribe to push
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
             });
 
             console.log('Push subscription created:', subscription.endpoint.substring(0, 50));
@@ -142,7 +142,8 @@ export function usePushNotifications() {
                 endpoint: subscription.endpoint,
                 p256dh,
                 auth,
-            }, {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as unknown as any, {
                 onConflict: 'endpoint',
             });
 

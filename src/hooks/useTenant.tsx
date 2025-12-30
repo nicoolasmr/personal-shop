@@ -1,7 +1,7 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { useAuth } from './useAuth';
-import type { Database } from '@/types/database';
+import type { Database } from '@/integrations/supabase/types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Org = Database['public']['Tables']['orgs']['Row'];
@@ -23,7 +23,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchTenantData = async () => {
+    const fetchTenantData = useCallback(async () => {
         if (!user || !supabaseConfigured) {
             setProfile(null);
             setOrg(null);
@@ -62,11 +62,11 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
 
     useEffect(() => {
         fetchTenantData();
-    }, [user]);
+    }, [fetchTenantData]);
 
     return (
         <TenantContext.Provider value={{ profile, org, loading, error, refetch: fetchTenantData }}>

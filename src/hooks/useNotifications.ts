@@ -88,3 +88,5 @@ export function useNotifications() {
         sendNotification,
     };
 }
+
+export { usePushNotifications } from './usePushNotifications';

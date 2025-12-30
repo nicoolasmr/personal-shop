@@ -127,8 +127,14 @@ export default function FinancePage() {
                         </Card>
                     </div>
                     <div className="space-y-2">
+                        import {ActiveInstallment} from '@/types/finance';
+
+                        // ... (existing imports)
+
+                        // ...
+
                         <h3 className="font-medium px-1">Parcelamentos Ativos</h3>
-                        {installments?.map((inst: any) => (
+                        {installments?.map((inst: ActiveInstallment) => (
                             <Card key={inst.id}>
                                 <CardContent className="p-4 flex justify-between items-center">
                                     <div>
