@@ -51,7 +51,7 @@ const OpsTeam = () => {
                             <Button
                                 key={r}
                                 variant={role === r ? 'default' : 'outline'}
-                                onClick={() => setRole(r as any)}
+                                onClick={() => setRole(r as 'team' | 'admin' | 'user')}
                                 size="sm"
                             >
                                 {r.toUpperCase()}

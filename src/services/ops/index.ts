@@ -13,7 +13,7 @@ export const logOpsAction = async (
     reason?: string,
     targetType?: string,
     targetId?: string,
-    meta?: Record<string, any>
+    meta?: Record<string, unknown>
 ) => {
     const { error } = await supabase.rpc('ops_log', {
         p_action: action,
@@ -36,7 +36,7 @@ export const logOpsAction = async (
  * Uses 'has_permission' RPC.
  */
 export const checkPermission = async (permission: string): Promise<boolean> => {
-    // @ts-ignore - Supabase types might not have this RPC yet
+    // @ts-expect-error - Metadata type mismatch with specific RPC requirement
     const { data, error } = await supabase.rpc('has_permission', {
         p: permission
     });

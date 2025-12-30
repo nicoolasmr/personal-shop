@@ -35,7 +35,7 @@ const OpsGuard = () => {
             // Fallback: Check profile table "role" column if it exists (legacy)
             // If it doesn't exist yet, this might fail, so we wrap in try/catch or just fail safe.
             const { data } = await supabase.from('profiles').select('role').eq('user_id', user.id).single();
-            // @ts-ignore
+            // @ts-expect-error - Known temporary type mismatch with Supabase roles
             return data?.role as string | null;
         },
         enabled: !!user && enabled, // Only check if user is allowed and flag is on

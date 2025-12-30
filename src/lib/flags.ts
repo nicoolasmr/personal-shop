@@ -12,7 +12,7 @@ const LOCAL_DEFAULTS: Record<string, boolean> = {
 };
 
 // In-memory cache
-let flagsCache: Record<string, boolean> = { ...LOCAL_DEFAULTS };
+const flagsCache: Record<string, boolean> = { ...LOCAL_DEFAULTS };
 
 /**
  * Fetch latest flags from DB and update cache.

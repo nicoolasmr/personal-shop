@@ -5,8 +5,20 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
+// Define the type for a bug report
+interface Bug {
+    id: string;
+    title: string | null;
+    severity: 'critical' | 'high' | 'medium' | 'low'; // Example severities, adjust as per actual data
+    status: 'open' | 'resolved' | 'in-progress' | 'new'; // Example statuses, adjust as per actual data
+    route: string;
+    created_at: string; // ISO date string
+    description: string;
+    // Add any other properties that the bug object might have
+}
+
 const Bugs = () => {
-    const { data: bugs, isLoading, error } = useQuery({
+    const { data: bugs, isLoading, error } = useQuery<Bug[]>({ // Specify the type for data
         queryKey: ['ops-bugs'],
         queryFn: async () => {
             const { data, error } = await supabase.functions.invoke('ops-bugs', {
@@ -14,7 +26,8 @@ const Bugs = () => {
                 body: { action: 'list' }
             });
             if (error) throw error;
-            return data.data as any[];
+            // Assuming data.data is an array of Bug objects
+            return data.data as Bug[];
         }
     });
 

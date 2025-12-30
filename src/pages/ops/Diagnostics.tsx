@@ -1,12 +1,19 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+interface DiagnosticEvent {
+    id: string;
+    severity: string;
+    event_type: string;
+    meta: Record<string, unknown>;
+    created_at: string;
+}
+
 const Diagnostics = () => {
-    const { data: events, isLoading, error } = useQuery({
+    const { data: events, isLoading, error } = useQuery<DiagnosticEvent[]>({
         queryKey: ['ops-diagnostics'],
         queryFn: async () => {
             const { data, error } = await supabase.functions.invoke('ops-diagnostics', {
@@ -14,7 +21,7 @@ const Diagnostics = () => {
                 body: { action: 'list' }
             });
             if (error) throw error;
-            return data.data as any[];
+            return data.data as DiagnosticEvent[];
         }
     });
 
@@ -50,8 +57,8 @@ const Diagnostics = () => {
                             <Badge
                                 variant="outline"
                                 className={`w-20 justify-center shrink-0 ${e.severity === 'critical' ? 'border-red-500 text-red-400' :
-                                        e.severity === 'error' ? 'border-orange-500 text-orange-400' :
-                                            'border-slate-700 text-slate-400'
+                                    e.severity === 'error' ? 'border-orange-500 text-orange-400' :
+                                        'border-slate-700 text-slate-400'
                                     }`}
                             >
                                 {e.severity}
