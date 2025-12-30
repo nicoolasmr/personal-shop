@@ -1,36 +1,54 @@
-# Guia de Configuração (SETUP) - VIDA360
+# Setup Guide
 
-## Requisitos
--   Node.js (v18 ou superior)
--   npm ou yarn
--   Supabase CLI (opcional para desenvolvimento local)
+## Environment Variables
 
-## Passos Iniciais
+**CRITICAL: Never hardcode API keys or secrets in source code!**
 
-1.  **Clonar o repositório**:
-    ```bash
-    git clone <repo-url>
-    cd vida360
-    ```
+### Required Variables
 
-2.  **Instalar dependências**:
-    ```bash
-    npm install
-    ```
+| Variable | Description | Where to Get |
+|----------|-------------|--------------|
+| `VITE_SUPABASE_URL` | Your Supabase project URL | Supabase Dashboard → Settings → API |
+| `VITE_SUPABASE_ANON_KEY` | Public anon key | Supabase Dashboard → Settings → API |
 
-3.  **Configurar Variáveis de Ambiente**:
-    Crie um arquivo `.env` baseado no `.env.example`:
-    ```bash
-    VITE_SUPABASE_URL=sua_url_do_supabase
-    VITE_SUPABASE_ANON_KEY=sua_chave_anonima
-    ```
+### Configuring in Lovable
 
-4.  **Iniciar Servidor de Desenvolvimento**:
-    ```bash
-    npm run dev
-    ```
+1. Go to your Lovable project settings
+2. Navigate to **Cloud** → **Secrets**
+3. Add each variable with its value
+4. The app will automatically use these at build time
 
-## Configuração do Supabase
--   Certifique-se de rodar as migrations localizadas em `/supabase/migrations/` no seu projeto Supabase.
--   Configure as Buckets de storage: `avatars`, `task-attachments`.
--   Habilite as permissões de Auth necessárias (Email/Senha).
+### Configuring for Docker/Kubernetes
+
+For containerized deployments, pass environment variables at **build time**:
+
+```bash
+# Docker build with env vars
+docker build \
+  --build-arg VITE_SUPABASE_URL=https://your-project.supabase.co \
+  --build-arg VITE_SUPABASE_ANON_KEY=your-anon-key \
+  -t vida360:latest .
+```
+
+**Important:** Since this is a Vite frontend app, environment variables are embedded at build time (not runtime). You must rebuild the container when credentials change.
+
+### Local Development with .env
+
+Create a `.env` file (never commit this):
+
+```bash
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+## Database Setup
+
+Run the migration SQL in `supabase/migrations/0001_init.sql` in your Supabase SQL Editor.
+
+## Local Development
+
+The app runs automatically in Lovable's preview.
+
+## Validation
+
+The app validates environment variables at startup. If they're missing, you'll see a friendly error message instead of a blank screen.

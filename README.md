@@ -6,12 +6,15 @@ Bem-vindo ao repositório do **VIDA360**, uma plataforma integrada para gestão 
 Veja o arquivo [SETUP.md](docs/SETUP.md) para instruções de instalação.
 
 ## 📚 Documentação Central
--   [Arquitetura](docs/ARCHITECTURE.md)
--   [Esquema do Banco de Dados](docs/DB_SCHEMA.md)
--   [Segurança e RLS](docs/SECURITY.md)
--   [Mapa de Rotas](docs/ROUTES.md)
--   [Guia de Deploy](docs/DEPLOYMENT.md)
--   [Operações (Runbook)](docs/RUNBOOK.md)
+- [Technical Handoff Report](docs/TECHNICAL_HANDOFF_REPORT.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Database](docs/DB_SCHEMA.md)
+- [Setup](docs/SETUP.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Routes](docs/ROUTES.md)
+- [Security](docs/SECURITY.md)
+- [Runbook (Operations)](docs/RUNBOOK.md)
+- [Quality Assurance](docs/qa/QA.md)
 
 ## 🧩 Módulos do Sistema
 -   [Hábitos](docs/modules/HABITS.md)
