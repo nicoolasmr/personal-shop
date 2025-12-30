@@ -90,6 +90,19 @@ const App = () => (
                                     <Route path="settings" element={<Settings />} />
                                 </Route>
 
+                                {/* Ops Console Routes */}
+                                <Route path="/ops" element={<OpsGuard />}>
+                                    <Route element={<OpsLayout />}>
+                                        <Route index element={<OpsHome />} />
+                                        <Route path="users" element={<OpsUsers />} />
+                                        <Route path="team" element={<OpsTeam />} />
+                                        <Route path="diagnostics" element={<Diagnostics />} />
+                                        <Route path="bugs" element={<Bugs />} />
+                                        <Route path="billing" element={<Billing />} />
+                                        <Route path="flags" element={<FeatureFlags />} />
+                                    </Route>
+                                </Route>
+
                                 {/* Catch-all */}
                                 <Route path="*" element={<Home />} />
                             </Routes>

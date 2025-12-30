@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export const AuthGuard = ({ children }: { children: JSX.Element }) => {
     const { session, loading } = useAuth();

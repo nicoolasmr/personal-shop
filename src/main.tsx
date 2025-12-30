@@ -34,10 +34,15 @@ initSentry();
     }
 })();
 
-createRoot(document.getElementById("root")!).render(
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <RuntimeErrorBoundary>
-            <App />
-        </RuntimeErrorBoundary>
-    </ThemeProvider>
-);
+import { syncFeatureFlags } from './lib/flags';
+
+// Initialize flags
+syncFeatureFlags().then(() => {
+    createRoot(document.getElementById("root")!).render(
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <RuntimeErrorBoundary>
+                <App />
+            </RuntimeErrorBoundary>
+        </ThemeProvider>
+    );
+});
