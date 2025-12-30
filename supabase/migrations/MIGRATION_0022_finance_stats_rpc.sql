@@ -1,5 +1,6 @@
--- Migration: Finance Installments and Goals Analytics
--- Description: Adds RPCs for installments summary and sync calculations
+-- Function cleanup for idempotency (prevents return type mismatch errors)
+DROP FUNCTION IF EXISTS public.get_installments_summary(uuid, uuid);
+DROP FUNCTION IF EXISTS public.get_finance_goal_progress(uuid);
 
 -- Function to get installments summary
 CREATE OR REPLACE FUNCTION public.get_installments_summary(
