@@ -239,7 +239,7 @@ export async function createTask(orgId: string, userId: string, payload: CreateT
         .eq('archived', false)
         .order('sort_order', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
     const sortOrder = (maxOrder?.sort_order ?? 0) + GAP_SIZE;
 

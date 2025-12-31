@@ -44,7 +44,14 @@ export function useCreateTask() {
             queryClient.invalidateQueries({ queryKey: [TODAY_TASKS_KEY] });
             toast({ title: 'Tarefa criada!', description: 'Sua nova tarefa foi adicionada.' });
         },
-        onError: (error) => { console.error('Create task error:', error); toast({ title: 'Erro ao criar tarefa', description: 'Tente novamente.', variant: 'destructive' }); },
+        onError: (error) => {
+            console.error('Create task error:', error);
+            toast({
+                title: 'Erro ao criar tarefa',
+                description: error instanceof Error ? error.message : 'Erro desconhecido',
+                variant: 'destructive'
+            });
+        },
     });
 }
 
