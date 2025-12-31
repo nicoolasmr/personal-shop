@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { TenantProvider } from "@/hooks/useTenant";
 import { AuthGuard } from "@/components/AuthGuard";
 import { NavigationTracker } from "@/components/NavigationTracker";
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
@@ -26,77 +27,77 @@ const CalendarPage = lazy(() => import("./pages/calendar/CalendarPage"));
 const Profile = lazy(() => import("./pages/profile/ProfilePage"));
 const Settings = lazy(() => import("./pages/settings/SettingsPage"));
 
-// Ops Console Imports
-import OpsGuard from "./guards/OpsGuard";
-import OpsLayout from "./pages/ops/OpsLayout";
-import OpsHome from "./pages/ops/OpsHome";
-import OpsUsers from "./pages/ops/OpsUsers";
-import OpsTeam from "./pages/ops/OpsTeam";
-import Diagnostics from "./pages/ops/Diagnostics";
-import Bugs from "./pages/ops/Bugs";
-import Billing from "./pages/ops/Billing";
-import FeatureFlags from "./pages/ops/FeatureFlags";
+// Ops Console Imports - Lazy loaded
+const OpsGuard = lazy(() => import("./guards/OpsGuard"));
+const OpsLayout = lazy(() => import("./pages/ops/OpsLayout"));
+const OpsHome = lazy(() => import("./pages/ops/OpsHome"));
+const OpsUsers = lazy(() => import("./pages/ops/OpsUsers"));
+const OpsTeam = lazy(() => import("./pages/ops/OpsTeam"));
+const Diagnostics = lazy(() => import("./pages/ops/Diagnostics"));
+const Bugs = lazy(() => import("./pages/ops/Bugs"));
+const Billing = lazy(() => import("./pages/ops/Billing"));
+const FeatureFlags = lazy(() => import("./pages/ops/FeatureFlags"));
 
-// Not found/Errors
-const NotFound = lazy(() => import("./pages/Home")); // Fallback to Home or specific NotFound if exists
 
 const App = () => (
     <TooltipProvider>
         <AuthProvider>
-            <Toaster />
-            <Sonner position="top-right" closeButton richColors />
-            <BrowserRouter>
-                <NavigationTracker />
-                <GlobalLoadingIndicator />
-                <RuntimeErrorBoundary>
-                    <Suspense fallback={<LoadingScreen />}>
-                        <Routes>
-                            {/* Public routes */}
-                            <Route path="/" element={<Navigate to="/login" replace />} />
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/signup" element={<Signup />} />
-                            <Route path="/cadastro" element={<Navigate to="/signup" replace />} />
+            <TenantProvider>
+                <Toaster />
+                <Sonner position="top-right" closeButton richColors />
+                <BrowserRouter>
+                    <NavigationTracker />
+                    <GlobalLoadingIndicator />
+                    <RuntimeErrorBoundary>
+                        <Suspense fallback={<LoadingScreen />}>
+                            <Routes>
+                                {/* Public routes */}
+                                <Route path="/" element={<Navigate to="/login" replace />} />
+                                <Route path="/login" element={<Login />} />
+                                <Route path="/signup" element={<Signup />} />
+                                <Route path="/cadastro" element={<Navigate to="/signup" replace />} />
 
-                            {/* Protected app routes */}
-                            <Route
-                                path="/app"
-                                element={
-                                    <AuthGuard>
-                                        <AppLayout />
-                                    </AuthGuard>
-                                }
-                            >
-                                <Route index element={<Navigate to="/app/home" replace />} />
-                                <Route path="home" element={<Home />} />
-                                <Route path="tasks" element={<Tasks />} />
-                                <Route path="habits" element={<Navigate to="/app/goals?tab=habits" replace />} />
-                                <Route path="goals" element={<Goals />} />
-                                <Route path="stats" element={<Statistics />} />
-                                <Route path="finance" element={<Finance />} />
-                                <Route path="calendar" element={<CalendarPage />} />
-                                <Route path="profile" element={<Profile />} />
-                                <Route path="settings" element={<Settings />} />
-                            </Route>
-
-                            {/* Ops Console Routes */}
-                            <Route path="/ops" element={<OpsGuard />}>
-                                <Route element={<OpsLayout />}>
-                                    <Route index element={<OpsHome />} />
-                                    <Route path="users" element={<OpsUsers />} />
-                                    <Route path="team" element={<OpsTeam />} />
-                                    <Route path="diagnostics" element={<Diagnostics />} />
-                                    <Route path="bugs" element={<Bugs />} />
-                                    <Route path="billing" element={<Billing />} />
-                                    <Route path="flags" element={<FeatureFlags />} />
+                                {/* Protected app routes */}
+                                <Route
+                                    path="/app"
+                                    element={
+                                        <AuthGuard>
+                                            <AppLayout />
+                                        </AuthGuard>
+                                    }
+                                >
+                                    <Route index element={<Navigate to="/app/home" replace />} />
+                                    <Route path="home" element={<Home />} />
+                                    <Route path="tasks" element={<Tasks />} />
+                                    <Route path="habits" element={<Navigate to="/app/goals?tab=habits" replace />} />
+                                    <Route path="goals" element={<Goals />} />
+                                    <Route path="stats" element={<Statistics />} />
+                                    <Route path="finance" element={<Finance />} />
+                                    <Route path="calendar" element={<CalendarPage />} />
+                                    <Route path="profile" element={<Profile />} />
+                                    <Route path="settings" element={<Settings />} />
                                 </Route>
-                            </Route>
 
-                            {/* Catch-all */}
-                            <Route path="*" element={<Home />} />
-                        </Routes>
-                    </Suspense>
-                </RuntimeErrorBoundary>
-            </BrowserRouter>
+                                {/* Ops Console Routes */}
+                                <Route path="/ops" element={<OpsGuard />}>
+                                    <Route element={<OpsLayout />}>
+                                        <Route index element={<OpsHome />} />
+                                        <Route path="users" element={<OpsUsers />} />
+                                        <Route path="team" element={<OpsTeam />} />
+                                        <Route path="diagnostics" element={<Diagnostics />} />
+                                        <Route path="bugs" element={<Bugs />} />
+                                        <Route path="billing" element={<Billing />} />
+                                        <Route path="flags" element={<FeatureFlags />} />
+                                    </Route>
+                                </Route>
+
+                                {/* Catch-all */}
+                                <Route path="*" element={<Home />} />
+                            </Routes>
+                        </Suspense>
+                    </RuntimeErrorBoundary>
+                </BrowserRouter>
+            </TenantProvider>
         </AuthProvider>
     </TooltipProvider>
 );

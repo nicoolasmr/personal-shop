@@ -1,6 +1,14 @@
 // =============================================================================
-// Levels System - XP to Level Calculation
+// Levels System - XP to Level Calculation & Metadata
 // =============================================================================
+
+export interface LevelDefinition {
+    level: number;
+    xpRequired: number;
+    name: string;
+    icon: string; // Matches keys in LevelProgressCard ICON_MAP
+    color: string;
+}
 
 export interface LevelInfo {
     level: number;
@@ -12,31 +20,35 @@ export interface LevelInfo {
 }
 
 /**
- * XP required for each level (exponential growth)
+ * Level Definitions (Metadata + XP Requirements)
  */
-const XP_PER_LEVEL: number[] = [
-    0,      // Level 1
-    100,    // Level 2
-    250,    // Level 3
-    450,    // Level 4
-    700,    // Level 5
-    1000,   // Level 6
-    1350,   // Level 7
-    1750,   // Level 8
-    2200,   // Level 9
-    2700,   // Level 10
-    3250,   // Level 11
-    3850,   // Level 12
-    4500,   // Level 13
-    5200,   // Level 14
-    5950,   // Level 15
-    6750,   // Level 16
-    7600,   // Level 17
-    8500,   // Level 18
-    9450,   // Level 19
-    10450,  // Level 20
+export const LEVELS: LevelDefinition[] = [
+    { level: 1, xpRequired: 0, name: 'Novato', icon: 'Sprout', color: '#4ade80' }, // Green-400
+    { level: 2, xpRequired: 100, name: 'Iniciante', icon: 'Sprout', color: '#22c55e' }, // Green-500
+    { level: 3, xpRequired: 250, name: 'Aprendiz', icon: 'Leaf', color: '#16a34a' }, // Green-600
+    { level: 4, xpRequired: 450, name: 'Explorador', icon: 'Leaf', color: '#059669' }, // Emerald-600
+    { level: 5, xpRequired: 700, name: 'Praticante', icon: 'Zap', color: '#0d9488' }, // Teal-600
+    { level: 6, xpRequired: 1000, name: 'Habilidoso', icon: 'Zap', color: '#0891b2' }, // Cyan-600
+    { level: 7, xpRequired: 1350, name: 'Dedicado', icon: 'Star', color: '#0284c7' }, // Sky-600
+    { level: 8, xpRequired: 1750, name: 'Comprometido', icon: 'Star', color: '#2563eb' }, // Blue-600
+    { level: 9, xpRequired: 2200, name: 'Entusiasta', icon: 'Medal', color: '#4f46e5' }, // Indigo-600
+    { level: 10, xpRequired: 2700, name: 'Veterano', icon: 'Medal', color: '#7c3aed' }, // Violet-600
+    { level: 11, xpRequired: 3250, name: 'Especialista', icon: 'Award', color: '#9333ea' }, // Purple-600
+    { level: 12, xpRequired: 3850, name: 'Mestre', icon: 'Award', color: '#c026d3' }, // Fuchsia-600
+    { level: 13, xpRequired: 4500, name: 'Grão-Mestre', icon: 'Trophy', color: '#db2777' }, // Pink-600
+    { level: 14, xpRequired: 5200, name: 'Virtuoso', icon: 'Trophy', color: '#e11d48' }, // Rose-600
+    { level: 15, xpRequired: 5950, name: 'Lenda', icon: 'Crown', color: '#f59e0b' }, // Amber-500
+    { level: 16, xpRequired: 6750, name: 'Mítico', icon: 'Crown', color: '#d97706' }, // Amber-600
+    { level: 17, xpRequired: 7600, name: 'Imortal', icon: 'Sparkles', color: '#ea580c' }, // Orange-600
+    { level: 18, xpRequired: 8500, name: 'Divino', icon: 'Sparkles', color: '#dc2626' }, // Red-600
+    { level: 19, xpRequired: 9450, name: 'Onisciente', icon: 'Sun', color: '#fcd34d' }, // Amber-300 (Gold)
+    { level: 20, xpRequired: 10450, name: 'Vida360', icon: 'Sun', color: '#fbbf24' }, // Amber-400 (Gold)
 ];
-export const LEVELS = XP_PER_LEVEL;
+
+/**
+ * Array of just XP thresholds for calculation logic
+ */
+const XP_THRESHOLDS = LEVELS.map(l => l.xpRequired);
 
 /**
  * Calculate level info from total XP
@@ -44,32 +56,35 @@ export const LEVELS = XP_PER_LEVEL;
 export function getLevelInfo(totalXP: number): LevelInfo {
     let level = 1;
     let xpForCurrentLevel = 0;
-    let xpForNextLevel = XP_PER_LEVEL[1];
+    let xpForNextLevel = XP_THRESHOLDS[1];
 
     // Find current level
-    for (let i = 0; i < XP_PER_LEVEL.length; i++) {
-        if (totalXP >= XP_PER_LEVEL[i]) {
+    for (let i = 0; i < XP_THRESHOLDS.length; i++) {
+        if (totalXP >= XP_THRESHOLDS[i]) {
             level = i + 1;
-            xpForCurrentLevel = XP_PER_LEVEL[i];
-            xpForNextLevel = XP_PER_LEVEL[i + 1] || XP_PER_LEVEL[i] + 1000;
+            xpForCurrentLevel = XP_THRESHOLDS[i];
+            xpForNextLevel = XP_THRESHOLDS[i + 1] || XP_THRESHOLDS[i] + 1000;
         } else {
             break;
         }
     }
 
-    // If beyond max level, calculate dynamically
-    if (level >= XP_PER_LEVEL.length) {
-        const lastXP = XP_PER_LEVEL[XP_PER_LEVEL.length - 1];
+    // If beyond max defined level, assume 1000xp per level
+    if (level > XP_THRESHOLDS.length) {
+        const lastDefinedXP = XP_THRESHOLDS[XP_THRESHOLDS.length - 1];
         const increment = 1000;
-        const levelsAbove = Math.floor((totalXP - lastXP) / increment);
-        level = XP_PER_LEVEL.length + levelsAbove;
-        xpForCurrentLevel = lastXP + (levelsAbove * increment);
+        const extraLevels = Math.floor((totalXP - lastDefinedXP) / increment);
+
+        // Cap visual level at 20 (or max defined) if you want, or allow it to go up endlessly but repeat visuals
+        // For now, let's keep the math right
+        level = XP_THRESHOLDS.length + extraLevels;
+        xpForCurrentLevel = lastDefinedXP + (extraLevels * increment);
         xpForNextLevel = xpForCurrentLevel + increment;
     }
 
     const progressToNextLevel = totalXP - xpForCurrentLevel;
     const xpNeeded = xpForNextLevel - xpForCurrentLevel;
-    const progressPercentage = Math.min(100, Math.round((progressToNextLevel / xpNeeded) * 100));
+    const progressPercentage = Math.min(100, Math.max(0, Math.round((progressToNextLevel / xpNeeded) * 100)));
 
     return {
         level,
@@ -86,18 +101,14 @@ export function getLevelInfo(totalXP: number): LevelInfo {
  */
 export function getXPForLevel(level: number): number {
     if (level <= 0) return 0;
-    if (level <= XP_PER_LEVEL.length) {
-        return XP_PER_LEVEL[level - 1];
+    if (level <= XP_THRESHOLDS.length) {
+        return XP_THRESHOLDS[level - 1];
     }
-    // Beyond max level
-    const lastXP = XP_PER_LEVEL[XP_PER_LEVEL.length - 1];
-    const levelsAbove = level - XP_PER_LEVEL.length;
+    const lastXP = XP_THRESHOLDS[XP_THRESHOLDS.length - 1];
+    const levelsAbove = level - XP_THRESHOLDS.length;
     return lastXP + (levelsAbove * 1000);
 }
 
-/**
- * Calculate user XP (alias for getLevelInfo for backward compatibility)
- */
 export function calculateUserXP(totalXP: number): LevelInfo {
     return getLevelInfo(totalXP);
 }

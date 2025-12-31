@@ -10,6 +10,7 @@ import { WeeklyProgressCard } from '@/components/home/WeeklyProgressCard';
 import { GoalsSummaryCard } from '@/components/home/GoalsSummaryCard';
 import { ProgressReportCard } from '@/components/home/ProgressReportCard';
 import { AchievementsShowcase } from '@/components/home/AchievementsShowcase';
+import { AgendaHomeCard } from '@/components/calendar/AgendaHomeCard';
 
 export default function Home() {
     const { profile, org, loading, error } = useTenant();
@@ -32,13 +33,7 @@ export default function Home() {
                 <TodayTasksCard />
                 <FinanceHomeCard />
                 <FinanceGoalsWidget />
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Próximos Eventos</CardTitle>
-                        <Calendar className="h-4 w-4 text-orange-500" />
-                    </CardHeader>
-                    <CardContent><div className="text-2xl font-bold">0</div><CardDescription className="text-xs">Esta semana</CardDescription></CardContent>
-                </Card>
+                <AgendaHomeCard />
             </div>
 
             <ProgressReportCard />
@@ -51,6 +46,6 @@ export default function Home() {
                     )}
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }

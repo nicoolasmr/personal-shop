@@ -2,14 +2,16 @@
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Home, CheckSquare, Target, BarChart2, DollarSign, Calendar, User, Settings, LogOut } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth'; // Updated path reference
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { useFeatureFlag } from '@/lib/flags';
 
-export function Sidebar() { // Simplified Sidebar for compilation
-    const { signOut } = useAuth(); // Assuming AuthContext/hook available
+interface SidebarProps {
+    className?: string;
+    onItemClick?: () => void;
+}
 
-    const calendarEnabled = useFeatureFlag('agenda_enabled');
+export function Sidebar({ className, onItemClick }: SidebarProps) {
+    const { signOut } = useAuth();
 
     // Using NavLinks for active state management automatically
     const navItems = [
@@ -17,14 +19,14 @@ export function Sidebar() { // Simplified Sidebar for compilation
         { to: '/app/tasks', icon: CheckSquare, label: 'Tarefas' },
         { to: '/app/goals', icon: Target, label: 'Metas & Hábitos' },
         { to: '/app/finance', icon: DollarSign, label: 'Finanças' },
+        { to: '/app/calendar', icon: Calendar, label: 'Agenda' },
         { to: '/app/stats', icon: BarChart2, label: 'Estatísticas' },
-        ...(calendarEnabled ? [{ to: '/app/calendar', icon: Calendar, label: 'Agenda' }] : []),
         { to: '/app/profile', icon: User, label: 'Perfil' },
         { to: '/app/settings', icon: Settings, label: 'Configurações' },
     ];
 
     return (
-        <aside className="hidden h-screen w-64 flex-col border-r bg-card md:flex">
+        <aside className={cn("h-screen w-64 flex-col border-r bg-card flex", className)}>
             <div className="p-6">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">VIDA360</h1>
             </div>
@@ -34,6 +36,7 @@ export function Sidebar() { // Simplified Sidebar for compilation
                     <NavLink
                         key={item.to}
                         to={item.to}
+                        onClick={onItemClick}
                         className={({ isActive }) => cn(
                             "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
                             isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
@@ -56,12 +59,11 @@ export function Sidebar() { // Simplified Sidebar for compilation
 }
 
 export function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-    // Basic mobile implementation without full Sheet logic for speed, user can augment later
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 z-50 bg-black/80 md:hidden" onClick={onClose}>
-            <div className="fixed inset-y-0 left-0 w-64 bg-card p-4" onClick={e => e.stopPropagation()}>
-                <Sidebar />
+        <div className="fixed inset-0 z-50 bg-black/80 md:hidden flex justify-start" onClick={onClose}>
+            <div className="relative bg-card h-full w-64 shadow-xl animate-in slide-in-from-left duration-200" onClick={e => e.stopPropagation()}>
+                <Sidebar onItemClick={onClose} />
             </div>
         </div>
     );

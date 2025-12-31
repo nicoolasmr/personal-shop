@@ -143,24 +143,19 @@ export async function archiveTask(orgId: string, userId: string, taskId: string)
 // MOVE (Status + Sort Order)
 // =============================================================================
 
-export async function moveTask(orgId: string, userId: string, payload: MoveTaskPayload): Promise<void> {
-    const { taskId, newStatus, newIndex } = payload;
+export async function moveTask(orgId: string, userId: string, taskId: string, payload: MoveTaskPayload): Promise<void> {
+    const { status: newStatus, destinationIndex: newIndex } = payload;
 
     // 1. Get task to verify
     const { data: task } = await db.from('tasks').select('*').eq('id', taskId).single();
     if (!task) throw new Error('Tarefa não encontrada');
 
     // 2. If changing status, update it
-    const sortOrder = task.sort_order;
-
     if (newStatus && newStatus !== task.status) {
         await updateTask(orgId, userId, taskId, { status: newStatus });
     }
 
-    // 3. Handle Reordering (Simplified Gap Logic or direct update)
-    // For this implementation, we will fetch neighbors to calculate new sort_order
-    // This is a naive implementation. For production high-volume, consider fractional indexing or linked list.
-
+    // 3. Handle Reordering
     const targetStatus = newStatus || task.status;
     const { data: siblings } = await db
         .from('tasks')
@@ -173,11 +168,7 @@ export async function moveTask(orgId: string, userId: string, payload: MoveTaskP
 
     const safeSiblings = siblings || [];
 
-    // Calculate new sort_order based on newIndex
-    // If newIndex is 0, put before first
-    // If newIndex is last, put after last
-    // If middle, average of prev and next
-
+    // Calculate new sort_order based on newIndex definition (0-based index in the target list)
     let newSortOrder = 0;
 
     if (safeSiblings.length === 0) {

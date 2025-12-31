@@ -14,29 +14,34 @@ const LEVEL_ICONS: Record<string, React.ReactNode> = {
 
 export function LevelProgressCard() {
     const { userXP, totalXP } = useGamification();
-    const { currentLevel, progressPercent, xpToNextLevel } = userXP;
-    const nextLevel = LEVELS.find(l => l.level === currentLevel.level + 1);
+
+    if (!userXP) return null;
+
+    // userXP is LevelInfo { level: number, ... }
+    // We need to look up the metadata (color, icon, name) from LEVELS array
+    const currentLevelDef = LEVELS.find(l => l.level === userXP.level) || LEVELS[0];
+    const nextLevelDef = LEVELS.find(l => l.level === userXP.level + 1);
 
     return (
         <Card className="overflow-hidden">
-            <div className="h-2" style={{ backgroundColor: currentLevel.color }} />
+            <div className="h-2" style={{ backgroundColor: currentLevelDef.color }} />
             <CardContent className="pt-4">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl" style={{ backgroundColor: `${currentLevel.color}20`, color: currentLevel.color }}>
-                        {LEVEL_ICONS[currentLevel.icon]}
+                    <div className="p-3 rounded-xl" style={{ backgroundColor: `${currentLevelDef.color}20`, color: currentLevelDef.color }}>
+                        {LEVEL_ICONS[currentLevelDef.icon] || <Sprout className="h-6 w-6" />}
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="font-bold text-lg">{currentLevel.name}</span>
-                            <Badge variant="secondary" className="text-xs" style={{ backgroundColor: `${currentLevel.color}20`, color: currentLevel.color }}>
-                                Nível {currentLevel.level}
+                            <span className="font-bold text-lg">{currentLevelDef.name}</span>
+                            <Badge variant="secondary" className="text-xs" style={{ backgroundColor: `${currentLevelDef.color}20`, color: currentLevelDef.color }}>
+                                Nível {userXP.level}
                             </Badge>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                             <span className="font-medium">{totalXP.toLocaleString()} XP</span>
-                            {nextLevel && <><span>•</span><span>{xpToNextLevel.toLocaleString()} XP para {nextLevel.name}</span></>}
+                            {nextLevelDef && <><span>•</span><span>{userXP.xpForNextLevel - totalXP} XP para {nextLevelDef.name}</span></>}
                         </div>
-                        <Progress value={progressPercent} className="h-2" style={{ '--progress-background': `${currentLevel.color}30`, '--progress-foreground': currentLevel.color } as React.CSSProperties} />
+                        <Progress value={userXP.progressPercentage} className="h-2" style={{ '--progress-background': `${currentLevelDef.color}30`, '--progress-foreground': currentLevelDef.color } as React.CSSProperties} />
                     </div>
                 </div>
             </CardContent>

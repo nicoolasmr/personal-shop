@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Plus, ChevronLeft, ChevronRight, DollarSign, CreditCard, Target, Filter } from 'lucide-react';
 import { useFinance } from '@/hooks/useFinance';
-import { formatCurrency, getMonthName, PaymentMethod } from '@/types/finance';
+import { formatCurrency, getMonthName, PaymentMethod, ActiveInstallment } from '@/types/finance';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TransactionForm } from '@/components/finance/TransactionForm';
 import { Progress } from '@/components/ui/progress';
@@ -127,11 +127,6 @@ export default function FinancePage() {
                         </Card>
                     </div>
                     <div className="space-y-2">
-                        import {ActiveInstallment} from '@/types/finance';
-
-                        // ... (existing imports)
-
-                        // ...
 
                         <h3 className="font-medium px-1">Parcelamentos Ativos</h3>
                         {installments?.map((inst: ActiveInstallment) => (

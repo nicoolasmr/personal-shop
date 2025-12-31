@@ -1,0 +1,340 @@
+import { useState, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon, CheckSquare, Paperclip, Clock, Trash2, Plus, X, Tag } from 'lucide-react';
+import { TaskWithSubtasks, TaskStatus, TaskPriority } from '@/types/tasks';
+import { useUpdateTask, useCreateSubtask, useToggleSubtask, useDeleteSubtask } from '@/hooks/queries/useTasks';
+import { cn } from '@/lib/utils';
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+
+interface TaskDetailsDialogProps {
+    task: TaskWithSubtasks | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}
+
+const updateTaskSchema = z.object({
+    title: z.string().min(1, 'Título é obrigatório'),
+    description: z.string().optional(),
+    status: z.enum(['todo', 'doing', 'done']),
+    priority: z.enum(['low', 'medium', 'high']),
+    due_date: z.date().optional().nullable(),
+});
+
+type UpdateTaskFormValues = z.infer<typeof updateTaskSchema>;
+
+export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialogProps) {
+    const { mutate: updateTask } = useUpdateTask();
+    const { mutate: createSubtask } = useCreateSubtask();
+    const { mutate: toggleSubtask } = useToggleSubtask();
+    const { mutate: deleteSubtask } = useDeleteSubtask(); // Assuming this hook exists or will be created
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+
+    const form = useForm<UpdateTaskFormValues>({
+        resolver: zodResolver(updateTaskSchema),
+        defaultValues: {
+            title: task?.title || '',
+            description: task?.description || '',
+            status: task?.status || 'todo',
+            priority: task?.priority || 'medium',
+            due_date: task?.due_date ? new Date(task.due_date) : undefined,
+        },
+    });
+
+    // Reset form when task changes
+    if (task && task.id && form.getValues('title') !== task.title && !form.formState.isDirty) {
+        form.reset({
+            title: task.title,
+            description: task.description || '',
+            status: task.status,
+            priority: task.priority,
+            due_date: task.due_date ? new Date(task.due_date) : undefined,
+        });
+    }
+
+    const onSubmit = (data: UpdateTaskFormValues) => {
+        if (!task) return;
+        updateTask({
+            taskId: task.id,
+            payload: {
+                ...data,
+                due_date: data.due_date ? data.due_date.toISOString() : null,
+            }
+        }, {
+            onSuccess: () => {
+                setIsEditing(false);
+            }
+        });
+    };
+
+    const handleAddSubtask = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!task || !newSubtaskTitle.trim()) return;
+        createSubtask({ taskId: task.id, title: newSubtaskTitle });
+        setNewSubtaskTitle('');
+    };
+
+    if (!task) return null;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                <div className="p-6 pb-2 border-b">
+                    <div className="flex items-start justify-between gap-4">
+                        {isEditing ? (
+                            <div className="w-full space-y-4">
+                                <Input
+                                    {...form.register('title')}
+                                    className="text-lg font-semibold h-auto py-2"
+                                    placeholder="Nome da Tarefa"
+                                />
+                            </div>
+                        ) : (
+                            <div className="space-y-1">
+                                <DialogTitle className="text-xl font-bold break-words">{task.title}</DialogTitle>
+                                <div className="flex flex-wrap gap-2 pt-1">
+                                    <Badge variant={task.status === 'done' ? 'default' : 'secondary'} className="uppercase text-[10px]">
+                                        {task.status === 'todo' ? 'A Fazer' : task.status === 'doing' ? 'Fazendo' : 'Feito'}
+                                    </Badge>
+                                    <Badge variant="outline" className={cn("text-[10px]",
+                                        task.priority === 'high' ? 'text-red-500 border-red-200 bg-red-50' :
+                                            task.priority === 'medium' ? 'text-yellow-600 border-yellow-200 bg-yellow-50' :
+                                                'text-green-600 border-green-200 bg-green-50'
+                                    )}>
+                                        {task.priority === 'high' ? 'Alta Prioridade' : task.priority === 'medium' ? 'Média Prioridade' : 'Baixa Prioridade'}
+                                    </Badge>
+                                    {task.due_date && (
+                                        <Badge variant="outline" className="text-[10px] flex gap-1 items-center">
+                                            <CalendarIcon className="h-3 w-3" />
+                                            {format(new Date(task.due_date), 'dd/MM/yyyy')}
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <Tabs defaultValue="details" className="flex-1 flex flex-col overflow-hidden">
+                    <TabsList className="px-6 border-b justify-start rounded-none bg-background h-12 w-full">
+                        <TabsTrigger value="details" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">Detalhes</TabsTrigger>
+                        <TabsTrigger value="subtasks" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent flex gap-2">
+                            Subtarefas
+                            <Badge variant="secondary" className="h-5 px-1 text-[10px]">{task.subtasks.length}</Badge>
+                        </TabsTrigger>
+                        <TabsTrigger value="attachments" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent flex gap-2">
+                            Anexos
+                            <Badge variant="secondary" className="h-5 px-1 text-[10px]">{task.attachments?.length || 0}</Badge>
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <div className="flex-1 overflow-auto p-6 bg-muted/10">
+                        <TabsContent value="details" className="m-0 space-y-6">
+                            {isEditing ? (
+                                <Form {...form}>
+                                    <form id="update-task-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="status"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Status</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                                            <SelectContent position="popper">
+                                                                <SelectItem value="todo">A Fazer</SelectItem>
+                                                                <SelectItem value="doing">Fazendo</SelectItem>
+                                                                <SelectItem value="done">Feito</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="priority"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Prioridade</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="low">Baixa</SelectItem>
+                                                                <SelectItem value="medium">Média</SelectItem>
+                                                                <SelectItem value="high">Alta</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+
+                                        <FormField
+                                            control={form.control}
+                                            name="due_date"
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-col">
+                                                    <FormLabel>Data Limite</FormLabel>
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <FormControl>
+                                                                <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                                    {field.value ? format(field.value, "PPP") : <span>Selecione uma data</span>}
+                                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                                </Button>
+                                                            </FormControl>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0" align="start">
+                                                            <Calendar
+                                                                mode="single"
+                                                                selected={field.value || undefined}
+                                                                onSelect={field.onChange}
+                                                                disabled={(date) => date < new Date("1900-01-01")}
+                                                                initialFocus
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="description"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Descrição</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea placeholder="Descreva a tarefa..." className="min-h-[120px]" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </form>
+                                </Form>
+                            ) : (
+                                <>
+                                    <div className="space-y-2">
+                                        <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                                            <Tag className="h-4 w-4" /> Descrição
+                                        </h3>
+                                        <div className="bg-background p-4 rounded-lg border text-sm whitespace-pre-wrap leading-relaxed">
+                                            {task.description || <span className="text-muted-foreground italic">Sem descrição.</span>}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-background p-3 rounded-lg border">
+                                            <span className="text-xs text-muted-foreground block mb-1">Criado em</span>
+                                            <div className="text-sm font-medium flex items-center gap-2">
+                                                <Clock className="h-3 w-3" />
+                                                {format(new Date(task.created_at), 'PPP')}
+                                            </div>
+                                        </div>
+                                        {task.due_date && (
+                                            <div className="bg-background p-3 rounded-lg border">
+                                                <span className="text-xs text-muted-foreground block mb-1">Vence em</span>
+                                                <div className="text-sm font-medium flex items-center gap-2 text-red-600">
+                                                    <CalendarIcon className="h-3 w-3" />
+                                                    {format(new Date(task.due_date), 'PPP')}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="subtasks" className="m-0 space-y-4">
+                            <form onSubmit={handleAddSubtask} className="flex gap-2">
+                                <Input
+                                    placeholder="Adicionar nova subtarefa..."
+                                    value={newSubtaskTitle}
+                                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                                />
+                                <Button type="submit" size="icon" disabled={!newSubtaskTitle.trim()}>
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            </form>
+
+                            <ScrollArea className="h-[300px] pr-4">
+                                {task.subtasks.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground text-sm">
+                                        Nenhuma subtarefa. Adicione itens para criar um checklist.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {task.subtasks.map((subtask) => (
+                                            <div key={subtask.id} className="flex items-center gap-3 p-3 bg-background rounded-lg border group hover:border-primary/50 transition-colors">
+                                                <Checkbox
+                                                    checked={subtask.done}
+                                                    onCheckedChange={(checked) => toggleSubtask({ subtaskId: subtask.id, done: checked as boolean })}
+                                                />
+                                                <span className={cn("flex-1 text-sm font-medium", subtask.done && "line-through text-muted-foreground")}>
+                                                    {subtask.title}
+                                                </span>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    onClick={() => deleteSubtask(subtask.id)}
+                                                >
+                                                    <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </ScrollArea>
+                        </TabsContent>
+
+                        <TabsContent value="attachments" className="m-0">
+                            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                                <Paperclip className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                                <p>Funcionalidade de anexos em breve.</p>
+                                <Button variant="outline" className="mt-4" disabled>Fazer Upload</Button>
+                            </div>
+                        </TabsContent>
+                    </div>
+                </Tabs>
+
+                <div className="p-4 border-t bg-muted/20 flex justify-end gap-2">
+                    {isEditing ? (
+                        <>
+                            <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                            <Button type="submit" form="update-task-form">Salvar Alterações</Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
+                            <Button onClick={() => setIsEditing(true)}>Editar Tarefa</Button>
+                        </>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}

@@ -9,25 +9,13 @@ import { Target, Plus, Search, Filter, Calendar as CalendarIcon, CheckCircle2, A
 import { useGoals } from '@/hooks/useGoals';
 import { useHabits } from '@/hooks/useHabits';
 import { Goal, GoalStatus, calculateProgress } from '@/types/goals';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'; // Assuming dialog shim exists or will handle separately. For now simpler UI.
-
-// Placeholder for missing components
-const GoalCard = ({ goal }: { goal: Goal }) => (
-    <Card className="mb-2">
-        <CardContent className="p-4 flex items-center justify-between">
-            <div>
-                <div className="font-medium">{goal.title}</div>
-                <div className="text-sm text-muted-foreground">{calculateProgress(goal)}% concluído</div>
-            </div>
-            <div className="flex gap-2">
-                {/* Actions */}
-            </div>
-        </CardContent>
-    </Card>
-);
+import { CreateGoalDialog } from '@/components/goals/CreateGoalDialog';
+import { CreateHabitDialog } from '@/components/goals/CreateHabitDialog';
 
 export default function GoalsPage() {
     const [activeTab, setActiveTab] = useState('goals');
+    const [isCreateGoalOpen, setIsCreateGoalOpen] = useState(false);
+    const [isCreateHabitOpen, setIsCreateHabitOpen] = useState(false);
     const { data: goals, isLoading: goalsLoading } = useGoals();
     const { data: habits, isLoading: habitsLoading } = useHabits();
 
@@ -41,12 +29,13 @@ export default function GoalsPage() {
                     <p className="text-muted-foreground">Gerencie seus objetivos e rotinas</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button><Plus className="h-4 w-4 mr-2" />Nova Meta</Button>
-                    <Button variant="outline"><Plus className="h-4 w-4 mr-2" />Novo Hábito</Button>
+                    <Button onClick={() => setIsCreateGoalOpen(true)}><Plus className="h-4 w-4 mr-2" />Nova Meta</Button>
+                    <Button variant="outline" onClick={() => setIsCreateHabitOpen(true)}><Plus className="h-4 w-4 mr-2" />Novo Hábito</Button>
                 </div>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                {/* ... Tabs Content same as before ... */}
                 <TabsList>
                     <TabsTrigger value="goals" className="flex gap-2"><Target className="h-4 w-4" />Metas</TabsTrigger>
                     <TabsTrigger value="habits" className="flex gap-2"><RefreshCw className="h-4 w-4" />Hábitos</TabsTrigger>
@@ -107,6 +96,9 @@ export default function GoalsPage() {
                     </div>
                 </TabsContent>
             </Tabs>
+
+            <CreateGoalDialog open={isCreateGoalOpen} onOpenChange={setIsCreateGoalOpen} />
+            <CreateHabitDialog open={isCreateHabitOpen} onOpenChange={setIsCreateHabitOpen} />
         </div>
     );
 }

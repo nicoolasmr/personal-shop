@@ -3,8 +3,12 @@
 -- Description: Agenda Foundation (Calendar Events, Reminders, RLS, and Flag)
 -- Created at: 2025-12-30
 
+-- 1. Clean slate to avoid conflicts with pre-existing partial tables
+DROP TABLE IF EXISTS public.calendar_reminders CASCADE;
+DROP TABLE IF EXISTS public.calendar_events CASCADE;
+
 -- 1. Create Calendar Events Table
-CREATE TABLE IF NOT EXISTS public.calendar_events (
+CREATE TABLE public.calendar_events (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL DEFAULT auth.uid(),
     org_id uuid NOT NULL, -- Will be set by trigger
