@@ -77,20 +77,24 @@ ALTER TABLE public.whatsapp_conversation_state ENABLE ROW LEVEL SECURITY;
 
 -- Policies for LINKS
 -- Users can see their own link status
+DROP POLICY IF EXISTS "Users view own link" ON public.whatsapp_links;
 CREATE POLICY "Users view own link" ON public.whatsapp_links
     FOR SELECT USING (user_id = auth.uid());
 
 -- Only system (service_role) creates/updates links usually, but we allow user to delete (unlink)
+DROP POLICY IF EXISTS "Users delete own link" ON public.whatsapp_links;
 CREATE POLICY "Users delete own link" ON public.whatsapp_links
     FOR DELETE USING (user_id = auth.uid());
 
 -- Policies for LOGS
 -- Users can view their own interaction logs (debug/transparency)
+DROP POLICY IF EXISTS "Users view own logs" ON public.whatsapp_messages_log;
 CREATE POLICY "Users view own logs" ON public.whatsapp_messages_log
     FOR SELECT USING (user_id = auth.uid());
 
 -- Policies for STATE
 -- Users not expected to query state directly from frontend, but allowed R if needed for debug
+DROP POLICY IF EXISTS "Users view own state" ON public.whatsapp_conversation_state;
 CREATE POLICY "Users view own state" ON public.whatsapp_conversation_state
     FOR SELECT USING (user_id = auth.uid());
 
