@@ -339,5 +339,6 @@ export function getAttachmentUrl(filePath: string): string {
 // =============================================================================
 
 async function logAudit(orgId: string, userId: string, action: string, entityType: string, entityId: string, meta: Record<string, unknown>): Promise<void> {
-    await db.from('audit_log').insert({ org_id: orgId, user_id: userId, action, entity_type: entityType, entity_id: entityId, meta }).catch(console.error);
+    const { error } = await db.from('audit_log').insert({ org_id: orgId, user_id: userId, action, entity_type: entityType, entity_id: entityId, meta });
+    if (error) console.error('Audit Log Error:', error);
 }
