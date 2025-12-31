@@ -221,7 +221,7 @@ export default function TasksPage() {
             <TaskDetailsDialog
                 task={selectedTask}
                 open={!!selectedTask}
-                onOpenChange={(open) => !open && setSelectedTask(null)}
+                onOpenChange={(open) => !open && setSelectedTaskId(null)}
             />
         </div>
     );
