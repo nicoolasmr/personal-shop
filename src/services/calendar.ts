@@ -13,6 +13,7 @@ export interface CreateEventPayload {
     start_at: Date;
     end_at: Date;
     all_day?: boolean;
+    color?: string;
     source?: 'manual' | 'whatsapp' | 'system';
 }
 
@@ -53,6 +54,7 @@ export const calendarService = {
                 start_at: payload.start_at.toISOString(),
                 end_at: payload.end_at.toISOString(),
                 all_day: payload.all_day ?? false,
+                color: payload.color || 'blue',
                 source: payload.source ?? 'manual'
             })
             .select()
@@ -61,6 +63,8 @@ export const calendarService = {
         if (error) throw error;
         return data as CalendarEvent;
     },
+
+
 
     /**
      * Update an existing event.

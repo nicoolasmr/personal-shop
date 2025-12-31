@@ -1,7 +1,7 @@
 
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Home, CheckSquare, Target, Activity, BarChart2, DollarSign, Calendar, User, Settings, LogOut } from 'lucide-react';
+import { Home, CheckSquare, Target, Activity, BarChart2, DollarSign, Calendar, User, Settings, LogOut, Shield, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 
@@ -22,6 +22,8 @@ export function Sidebar({ className, onItemClick }: SidebarProps) {
         { to: '/app/habits', icon: Activity, label: 'Hábitos' },
         { to: '/app/goals', icon: Target, label: 'Metas' },
         { to: '/app/stats', icon: BarChart2, label: 'Estatísticas' },
+        { to: '/app/admin', icon: Shield, label: 'Administração' }, // Added
+        { to: '/app/whatsapp', icon: MessageCircle, label: 'WhatsApp' }, // Added
         { to: '/app/profile', icon: User, label: 'Perfil' },
         // Settings moved to bottom/separate section visually often, but here list is fine
         { to: '/app/settings', icon: Settings, label: 'Configurações' },

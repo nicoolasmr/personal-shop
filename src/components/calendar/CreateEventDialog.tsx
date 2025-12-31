@@ -28,6 +28,7 @@ const createEventSchema = z.object({
     end_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato inválido'),
     all_day: z.boolean().default(false),
     type: z.enum(['presencial', 'video']).default('presencial'),
+    color: z.string().optional().default('blue'),
 });
 
 type CreateEventFormValues = z.infer<typeof createEventSchema>;
@@ -37,6 +38,17 @@ interface CreateEventDialogProps {
     onOpenChange: (open: boolean) => void;
     defaultDate?: Date;
 }
+
+const EVENT_COLORS = [
+    { value: 'blue', label: 'Azul', class: 'bg-blue-500' },
+    { value: 'green', label: 'Verde', class: 'bg-green-500' },
+    { value: 'red', label: 'Vermelho', class: 'bg-red-500' },
+    { value: 'yellow', label: 'Amarelo', class: 'bg-yellow-500' },
+    { value: 'purple', label: 'Roxo', class: 'bg-purple-500' },
+    { value: 'pink', label: 'Rosa', class: 'bg-pink-500' },
+    { value: 'orange', label: 'Laranja', class: 'bg-orange-500' },
+    { value: 'gray', label: 'Cinza', class: 'bg-gray-500' },
+];
 
 export function CreateEventDialog({ open, onOpenChange, defaultDate }: CreateEventDialogProps) {
     const { mutate: createEvent, isPending } = useCreateEvent();
@@ -52,6 +64,7 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate }: CreateEve
             end_time: format(addHours(new Date(), 1), 'HH:00'),
             all_day: false,
             type: 'presencial',
+            color: 'blue',
         },
     });
 
@@ -78,6 +91,7 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate }: CreateEve
             start_at: start,
             end_at: end,
             all_day: data.all_day,
+            color: data.color,
         }, {
             onSuccess: () => {
                 form.reset();
@@ -129,16 +143,44 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate }: CreateEve
 
                             <FormField
                                 control={form.control}
-                                name="location"
+                                name="color"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Local / Link</FormLabel>
-                                        <FormControl><Input placeholder="Sala 1 ou Link Zoom" {...field} /></FormControl>
+                                        <FormLabel>Cor</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {EVENT_COLORS.map((color) => (
+                                                    <SelectItem key={color.value} value={color.value}>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={cn("h-3 w-3 rounded-full", color.class)} />
+                                                            {color.label}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
                         </div>
+
+                        <FormField
+                            control={form.control}
+                            name="location"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Local / Link</FormLabel>
+                                    <FormControl><Input placeholder="Sala 1 ou Link Zoom" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <div className="space-y-2 border p-3 rounded-lg bg-muted/20">
                             <FormField

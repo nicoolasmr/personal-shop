@@ -26,6 +26,8 @@ const Finance = lazy(() => import("./pages/finance/FinancePage"));
 const CalendarPage = lazy(() => import("./pages/calendar/CalendarPage"));
 const Profile = lazy(() => import("./pages/profile/ProfilePage"));
 const Settings = lazy(() => import("./pages/settings/SettingsPage"));
+const Admin = lazy(() => import("./pages/admin/AdminPage"));
+const Whatsapp = lazy(() => import("./pages/whatsapp/WhatsappPage"));
 
 // Ops Console Imports - Lazy loaded
 const OpsGuard = lazy(() => import("./guards/OpsGuard"));
