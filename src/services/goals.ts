@@ -233,6 +233,28 @@ export async function archiveGoal(orgId: string, userId: string, goalId: string)
 }
 
 // =============================================================================
+// DELETE GOAL
+// =============================================================================
+
+export async function deleteGoal(orgId: string, userId: string, goalId: string): Promise<void> {
+    if (!supabaseConfigured) throw new Error('Supabase não configurado');
+
+    const { error } = await supabase
+        .from('goals')
+        .delete()
+        .eq('id', goalId)
+        .eq('org_id', orgId);
+
+    if (error) {
+        console.error('Error deleting goal:', error);
+        throw new Error('Erro ao excluir meta');
+    }
+
+    // Audit log
+    await logAudit(orgId, userId, 'goal_deleted', 'goal', goalId, {});
+}
+
+// =============================================================================
 // COMPLETE GOAL
 // =============================================================================
 

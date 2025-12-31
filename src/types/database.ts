@@ -1,5 +1,5 @@
 export type AppRole = 'owner' | 'admin' | 'member';
-export type Json = Record<string, unknown>;
+export type Json = any;
 
 export interface Database {
     public: {
@@ -38,7 +38,17 @@ export interface Database {
                 Row: { id: string; org_id: string; habit_id: string; user_id: string; checkin_date: string; completed: boolean; notes: string | null; source: string; created_at: string };
                 Insert: { id?: string; org_id: string; habit_id: string; user_id: string; checkin_date: string; completed?: boolean; notes?: string | null; source?: string; created_at?: string };
                 Update: { id?: string; org_id?: string; habit_id?: string; user_id?: string; checkin_date?: string; completed?: boolean; notes?: string | null; source?: string; created_at?: string };
-            };
+            },
+            goals: {
+                Row: { id: string; org_id: string; user_id: string; type: string; title: string; description: string | null; target_value: number | null; current_value: number; unit: string | null; due_date: string | null; status: string; linked_habit_id: string | null; created_at: string; updated_at: string };
+                Insert: { id?: string; org_id: string; user_id: string; type: string; title: string; description?: string | null; target_value?: number | null; current_value?: number; unit?: string | null; due_date?: string | null; status?: string; linked_habit_id?: string | null; created_at?: string; updated_at?: string };
+                Update: { id?: string; org_id?: string; user_id?: string; type?: string; title?: string; description?: string | null; target_value?: number | null; current_value?: number; unit?: string | null; due_date?: string | null; status?: string; linked_habit_id?: string | null; created_at?: string; updated_at?: string };
+            },
+            goal_progress: {
+                Row: { id: string; org_id: string; goal_id: string; user_id: string; progress_date: string; delta_value: number; notes: string | null; source: string; created_at: string };
+                Insert: { id?: string; org_id: string; goal_id: string; user_id: string; progress_date: string; delta_value: number; notes?: string | null; source?: string; created_at?: string };
+                Update: { id?: string; org_id?: string; goal_id?: string; user_id?: string; progress_date?: string; delta_value?: number; notes?: string | null; source?: string; created_at?: string };
+            },
             finance_goals: {
                 Row: { id: string; org_id: string; user_id: string; name: string; type: string; current_amount: number; target_amount: number; is_active: boolean; created_at: string; updated_at: string; deadline?: string | null; category_id?: string | null };
                 Insert: { id?: string; org_id: string; user_id: string; name: string; type: string; current_amount?: number; target_amount: number; is_active?: boolean; created_at?: string; updated_at?: string; deadline?: string | null; category_id?: string | null };

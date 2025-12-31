@@ -20,6 +20,14 @@ export function useCalendarEvents(year: number, month: number) {
     });
 }
 
+export function useEventRange(start: Date, end: Date) {
+    return useQuery({
+        queryKey: CALENDAR_KEYS.list(start, end),
+        queryFn: () => calendarService.listEvents(start, end),
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+}
+
 export function useCreateEvent() {
     const queryClient = useQueryClient();
 

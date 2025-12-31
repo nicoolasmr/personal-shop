@@ -36,7 +36,7 @@ export async function createTransaction(orgId: string, userId: string, payload: 
     const installmentCount = payload.installment_count || 1;
     const parcelAmount = installmentCount > 1 ? Math.round((payload.amount / installmentCount) * 100) / 100 : payload.amount;
 
-    const { data } = await supabase.from('transactions').insert({
+    const { data: result, error } = await supabase.from('transactions').insert({
         org_id: orgId,
         user_id: userId,
         type: payload.type,
@@ -47,6 +47,11 @@ export async function createTransaction(orgId: string, userId: string, payload: 
         installment_count: installmentCount,
         installment_number: 1,
     }).select().single();
+
+    if (error) throw error;
+    if (!result) throw new Error('Failed to create transaction');
+
+    const data = result as Transaction;
 
     // If installments > 1, call RPC to generate parcels
     if (installmentCount > 1) {
@@ -59,7 +64,8 @@ export async function createTransaction(orgId: string, userId: string, payload: 
 export async function updateTransaction(orgId: string, userId: string, transactionId: string, payload: Partial<CreateTransactionPayload>): Promise<Transaction> {
     const { data, error } = await supabase.from('transactions').update(payload).eq('id', transactionId).eq('org_id', orgId).select().single();
     if (error) throw error;
-    return data;
+    if (!data) throw new Error('Transaction not found');
+    return data as Transaction;
 }
 
 export async function deleteTransaction(orgId: string, userId: string, transactionId: string): Promise<void> {
@@ -95,6 +101,7 @@ export async function fetchCategories(orgId: string): Promise<TransactionCategor
 export async function createCategory(orgId: string, userId: string, payload: CreateCategoryPayload): Promise<TransactionCategory> {
     const { data, error } = await supabase.from('transaction_categories').insert({ ...payload, org_id: orgId }).select().single();
     if (error) throw error;
+    if (!data) throw new Error('Failed to create category');
     return data;
 }
 
@@ -144,12 +151,14 @@ export async function fetchFinanceGoals(orgId: string, userId: string): Promise<
 
 export async function createFinanceGoal(orgId: string, userId: string, payload: CreateFinanceGoalPayload): Promise<FinanceGoal> {
     const { data } = await supabase.from('finance_goals').insert({ org_id: orgId, user_id: userId, ...payload, is_active: true }).select().single();
+    if (!data) throw new Error('Failed to create finance goal');
     return data;
 }
 
 export async function updateFinanceGoal(orgId: string, userId: string, goalId: string, payload: Partial<CreateFinanceGoalPayload>): Promise<FinanceGoal> {
     const { data, error } = await supabase.from('finance_goals').update(payload).eq('id', goalId).eq('org_id', orgId).select().single();
     if (error) throw error;
+    if (!data) throw new Error('Finance goal not found');
     return data;
 }
 

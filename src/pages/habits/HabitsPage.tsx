@@ -13,11 +13,14 @@ import { isSameDay, subDays, format, startOfWeek, addDays, isSameMonth } from 'd
 import { ptBR } from 'date-fns/locale';
 import { Loader2 } from 'lucide-react';
 
+import { HabitDetailsDialog } from '@/components/habits/HabitDetailsDialog';
+
 export default function HabitsPage() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const { data: habits, isLoading } = useHabits();
     const { mutate: toggleCheckin } = useToggleCheckin();
     const [togglingId, setTogglingId] = useState<string | null>(null);
+    const [selectedHabit, setSelectedHabit] = useState<HabitWithCheckins | null>(null);
 
     // Filter state
     const [activeTab, setActiveTab] = useState('all');
@@ -132,7 +135,11 @@ export default function HabitsPage() {
                                 const isDone = isDoneToday(habit);
 
                                 return (
-                                    <Card key={habit.id} className="overflow-hidden">
+                                    <Card
+                                        key={habit.id}
+                                        className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                                        onClick={() => setSelectedHabit(habit)}
+                                    >
                                         <div className="p-6">
                                             <div className="flex justify-between items-start mb-6">
                                                 <div className="space-y-1">
@@ -182,7 +189,7 @@ export default function HabitsPage() {
                                                 <Progress value={23} className="h-2" />
 
                                                 <Button
-                                                    onClick={() => handleToggle(habit.id)}
+                                                    onClick={(e) => { e.stopPropagation(); handleToggle(habit.id); }}
                                                     disabled={togglingId === habit.id}
                                                     className={cn(
                                                         "w-full h-12 text-md transition-all",
@@ -203,6 +210,11 @@ export default function HabitsPage() {
             </Tabs>
 
             <CreateHabitDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
+            <HabitDetailsDialog
+                habit={selectedHabit}
+                open={!!selectedHabit}
+                onOpenChange={(open) => !open && setSelectedHabit(null)}
+            />
         </div>
     );
 }

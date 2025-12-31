@@ -12,10 +12,13 @@ import { Goal, calculateProgress, GoalStatus, isGoalOverdue, GOAL_TYPE_CONFIGS, 
 import { cn } from '@/lib/utils';
 import { Loader2, Check } from 'lucide-react';
 
+import { GoalDetailsDialog } from '@/components/goals/GoalDetailsDialog';
+
 export default function GoalsPage() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const { data: goals, isLoading } = useGoals();
     const { mutate: addProgress } = useAddProgress();
+    const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
 
     // Filter state
     const [activeTab, setActiveTab] = useState('all');
@@ -114,7 +117,11 @@ export default function GoalsPage() {
                                 const typeConfig = GOAL_TYPE_CONFIGS[goal.type] || GOAL_TYPE_CONFIGS['custom'];
 
                                 return (
-                                    <Card key={goal.id} className={cn("overflow-hidden border-l-4", isDone ? "border-l-green-500 bg-green-50/10" : "border-l-red-100 dark:border-l-red-900/50")}>
+                                    <Card
+                                        key={goal.id}
+                                        className={cn("overflow-hidden border-l-4 cursor-pointer hover:shadow-md transition-shadow", isDone ? "border-l-green-500 bg-green-50/10" : "border-l-red-100 dark:border-l-red-900/50")}
+                                        onClick={() => setSelectedGoal(goal)}
+                                    >
                                         <div className="p-6">
                                             <div className="flex justify-between items-start mb-4">
                                                 <div className="space-y-1">
@@ -126,7 +133,7 @@ export default function GoalsPage() {
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8"><Edit2 className="h-4 w-4" /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelectedGoal(goal); }}><Edit2 className="h-4 w-4" /></Button>
                                                 </div>
                                             </div>
 
@@ -145,23 +152,29 @@ export default function GoalsPage() {
                                                 </div>
 
                                                 {!isDone && (
-                                                    <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg mt-4 space-y-3">
-                                                        <Button
-                                                            className="w-full bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800"
-                                                            variant="outline"
-                                                            onClick={() => handleQuickProgress(goal.id)}
-                                                            disabled={updatingGoalId === goal.id}
-                                                        >
-                                                            {updatingGoalId === goal.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
-                                                            Marcar progresso hoje
-                                                        </Button>
-                                                        <Input
-                                                            placeholder={typeConfig.placeholder || "Digite o valor..."}
-                                                            className="bg-white dark:bg-black/20"
-                                                            type="number"
-                                                            value={progressInputs[goal.id] || ''}
-                                                            onChange={(e) => setProgressInputs(prev => ({ ...prev, [goal.id]: e.target.value }))}
-                                                        />
+                                                    <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg mt-4" onClick={(e) => e.stopPropagation()}>
+                                                        <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-2">Atualizar progresso</p>
+                                                        <div className="flex gap-2">
+                                                            <Input
+                                                                placeholder={typeConfig.placeholder || "Digite o valor..."}
+                                                                className="bg-white dark:bg-black/20 flex-1"
+                                                                type="number"
+                                                                value={progressInputs[goal.id] || ''}
+                                                                onChange={(e) => setProgressInputs(prev => ({ ...prev, [goal.id]: e.target.value }))}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') handleQuickProgress(goal.id);
+                                                                }}
+                                                            />
+                                                            <Button
+                                                                className="bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800 min-w-[120px]"
+                                                                variant="outline"
+                                                                onClick={() => handleQuickProgress(goal.id)}
+                                                                disabled={updatingGoalId === goal.id || !progressInputs[goal.id]}
+                                                            >
+                                                                {updatingGoalId === goal.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                                                                Confirmar
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -174,6 +187,11 @@ export default function GoalsPage() {
             </Tabs>
 
             <CreateGoalDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
+            <GoalDetailsDialog
+                goal={selectedGoal}
+                open={!!selectedGoal}
+                onOpenChange={(open) => !open && setSelectedGoal(null)}
+            />
         </div>
     );
 }

@@ -88,6 +88,25 @@ export function useArchiveHabit() {
     });
 }
 
+export function useDeleteHabit() {
+    const { org } = useTenant();
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (habitId: string) => {
+            if (!org?.id || !user?.id) throw new Error('Missing org or user');
+            return habitsService.deleteHabit(org.id, user.id, habitId);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [HABITS_KEY] });
+            queryClient.invalidateQueries({ queryKey: [TODAY_SUMMARY_KEY] });
+            toast({ title: 'Hábito excluído permanentemente' });
+        },
+        onError: (error) => { console.error('Delete habit error:', error); toast({ title: 'Erro ao excluir hábito', description: 'Tente novamente.', variant: 'destructive' }); },
+    });
+}
+
 export function useToggleCheckin() {
     const { org } = useTenant();
     const { user } = useAuth();

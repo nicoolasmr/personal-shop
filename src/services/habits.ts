@@ -224,6 +224,27 @@ export async function archiveHabit(
 }
 
 // =============================================================================
+// DELETE HABIT
+// =============================================================================
+
+export async function deleteHabit(
+    orgId: string,
+    userId: string,
+    habitId: string
+): Promise<void> {
+    const { error } = await db
+        .from('habits')
+        .delete()
+        .eq('id', habitId)
+        .eq('org_id', orgId);
+
+    if (error) throw error;
+
+    // Audit log
+    await logAudit(orgId, userId, 'habit_deleted', 'habit', habitId, {});
+}
+
+// =============================================================================
 // TOGGLE HABIT CHECKIN (upsert + invert)
 // =============================================================================
 

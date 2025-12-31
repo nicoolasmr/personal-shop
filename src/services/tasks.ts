@@ -49,14 +49,16 @@ export async function listTasks(orgId: string): Promise<TaskWithSubtasks[]> {
         .order('created_at');
 
     const subtasksByTask = (subtasks || []).reduce((acc, s) => {
-        if (!acc[s.task_id]) acc[s.task_id] = [];
-        acc[s.task_id].push(s as TaskSubtask);
+        const item = s as TaskSubtask;
+        if (!acc[item.task_id]) acc[item.task_id] = [];
+        acc[item.task_id].push(item);
         return acc;
     }, {} as Record<string, TaskSubtask[]>);
 
     const attachmentsByTask = (attachments || []).reduce((acc, a) => {
-        if (!acc[a.task_id]) acc[a.task_id] = [];
-        acc[a.task_id].push(a as TaskAttachment);
+        const item = a as TaskAttachment;
+        if (!acc[item.task_id]) acc[item.task_id] = [];
+        acc[item.task_id].push(item);
         return acc;
     }, {} as Record<string, TaskAttachment[]>);
 
@@ -77,7 +79,7 @@ export async function listTasksWithDueDate(orgId: string, startDate: string, end
         .lte('due_date', endDate);
 
     if (error) throw new Error('Erro ao buscar tarefas por data');
-    return tasks as Task[];
+    return (tasks || []) as Task[];
 }
 
 // =============================================================================
@@ -86,15 +88,15 @@ export async function listTasksWithDueDate(orgId: string, startDate: string, end
 
 export async function getTask(taskId: string): Promise<TaskWithSubtasks> {
     const { data: task, error } = await db.from('tasks').select('*').eq('id', taskId).single();
-    if (error) throw new Error('Tarefa não encontrada');
+    if (error || !task) throw new Error('Tarefa não encontrada');
 
     const { data: subtasks } = await db.from('task_subtasks').select('*').eq('task_id', taskId).order('created_at');
     const { data: attachments } = await db.from('task_attachments').select('*').eq('task_id', taskId).order('created_at');
 
     return {
         ...task,
-        subtasks: subtasks || [],
-        attachments: attachments || []
+        subtasks: (subtasks || []) as TaskSubtask[],
+        attachments: (attachments || []) as TaskAttachment[]
     } as TaskWithSubtasks;
 }
 
@@ -112,6 +114,7 @@ export async function updateTask(orgId: string, userId: string, taskId: string, 
         .single();
 
     if (error) throw new Error('Erro ao atualizar tarefa');
+    if (!data) throw new Error('Tarefa não encontrada');
     await logAudit(orgId, userId, 'task_updated', 'task', taskId, payload as Record<string, unknown>);
     return data as Task;
 }
@@ -135,6 +138,7 @@ export async function archiveTask(orgId: string, userId: string, taskId: string)
         .single();
 
     if (error) throw new Error('Erro ao arquivar tarefa');
+    if (!data) throw new Error('Tarefa não encontrada');
     await logAudit(orgId, userId, 'task_archived', 'task', taskId, {});
     return data as Task;
 }
@@ -166,7 +170,7 @@ export async function moveTask(orgId: string, userId: string, taskId: string, pa
         .neq('id', taskId)
         .order('sort_order', { ascending: true }); // ASC to find index
 
-    const safeSiblings = siblings || [];
+    const safeSiblings = (siblings || []) as { id: string; sort_order: number }[];
 
     // Calculate new sort_order based on newIndex definition (0-based index in the target list)
     let newSortOrder = 0;
@@ -256,6 +260,7 @@ export async function createTask(orgId: string, userId: string, payload: CreateT
         .single();
 
     if (error) throw new Error('Erro ao criar tarefa');
+    if (!data) throw new Error('Falha ao criar tarefa');
     await logAudit(orgId, userId, 'task_created', 'task', data.id, { title: payload.title });
     return data as Task;
 }

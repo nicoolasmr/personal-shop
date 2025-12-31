@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, CheckSquare, DollarSign, Calendar as CalendarIcon, Target, TrendingUp, AlertCircle, TrendingDown, ArrowRight, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFinance } from '@/hooks/useFinance';
-import { useCalendarEvents } from '@/hooks/queries/useCalendar';
+import { useCalendarEvents, useEventRange } from '@/hooks/queries/useCalendar';
 import { useTasks } from '@/hooks/queries/useTasks';
 import { useGoals } from '@/hooks/useGoals';
 import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog';
@@ -36,7 +36,7 @@ export default function Home() {
     // Data Hooks
     const today = new Date();
     const { summary: financeSummary } = useFinance(today.getFullYear(), today.getMonth() + 1);
-    const { data: events } = useCalendarEvents(
+    const { data: events } = useEventRange(
         new Date(today.setHours(0, 0, 0, 0)),
         new Date(today.setHours(23, 59, 59, 999))
     );

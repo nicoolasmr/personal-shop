@@ -182,3 +182,23 @@ export function useDeleteProgress() {
         onError: (error) => { console.error('Delete progress error:', error); toast({ title: 'Erro ao remover progresso', description: 'Tente novamente.', variant: 'destructive' }); },
     });
 }
+
+export function useDeleteGoal() {
+    const { org } = useTenant();
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (goalId: string) => {
+            if (!org?.id || !user?.id) throw new Error('Missing org or user');
+            return goalsService.deleteGoal(org.id, user.id, goalId);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [GOALS_KEY] });
+            queryClient.invalidateQueries({ queryKey: [ACTIVE_GOALS_KEY] });
+            queryClient.invalidateQueries({ queryKey: ['finance-goals'] });
+            toast({ title: 'Meta excluída permanentemente' });
+        },
+        onError: (error) => { console.error('Delete goal error:', error); toast({ title: 'Erro ao excluir meta', description: 'Tente novamente.', variant: 'destructive' }); },
+    });
+}
