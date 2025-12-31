@@ -2,24 +2,27 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const { signIn, configured } = useAuth();
     const navigate = useNavigate();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+        const { error } = await signIn(email, password);
         if (error) {
             alert(error.message);
         } else {
             navigate('/app/home');
         }
+
         setLoading(false);
     };
 
@@ -28,7 +31,9 @@ export default function Login() {
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-bold">VIDA360</CardTitle>
-                    <CardDescription>Entre para continuar sua jornada</CardDescription>
+                    <CardDescription>
+                        {configured ? 'Entre para continuar sua jornada' : 'Configure o Supabase para habilitar o login'}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleLogin} className="space-y-4">
@@ -40,7 +45,7 @@ export default function Login() {
                             <label className="text-sm font-medium">Senha</label>
                             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                         </div>
-                        <Button className="w-full" disabled={loading}>
+                        <Button className="w-full" disabled={loading || !configured}>
                             {loading ? 'Entrando...' : 'Entrar'}
                         </Button>
                     </form>

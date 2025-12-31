@@ -21,7 +21,7 @@ export const useCreateEvent = () => {
             toast.success('Evento criado com sucesso!');
             queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
             console.error('Error creating event:', error);
             toast.error('Erro ao criar evento. Tente novamente.');
         }
@@ -37,7 +37,7 @@ export const useUpdateEvent = () => {
             toast.success('Evento atualizado!');
             queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
             console.error('Error updating event:', error);
             toast.error('Erro ao atualizar evento.');
         }
@@ -53,7 +53,7 @@ export const useDeleteEvent = () => {
             toast.success('Evento removido.');
             queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
             console.error('Error deleting event:', error);
             toast.error('Erro ao remover evento.');
         }

@@ -46,8 +46,12 @@ export function Sidebar({ className, onItemClick }: SidebarProps) {
                             isActive ? "bg-accent text-accent-foreground text-primary" : "text-muted-foreground"
                         )}
                     >
-                        <item.icon className={cn("h-4 w-4", ({ isActive }: any) => isActive && "text-primary")} />
-                        {item.label}
+                        {({ isActive }) => (
+                            <>
+                                <item.icon className={cn("h-4 w-4", isActive && "text-primary")} />
+                                {item.label}
+                            </>
+                        )}
                     </NavLink>
                 ))}
             </nav>

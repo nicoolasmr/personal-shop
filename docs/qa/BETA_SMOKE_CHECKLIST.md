@@ -12,15 +12,15 @@
 
 **Comportamento Esperado:**
 - Se `VITE_SENTRY_DSN` configurado → erros enviados ao Sentry
-- Se `VITE_SENTRY_DSN` ausente → fallback silencioso para console.log
+- Se `VITE_SENTRY_DSN` ausente → fallback silencioso (nenhuma inicialização)
 
 **Validação (Console do Browser):**
 ```
 // Esperado quando DSN não configurado:
-[Sentry] DSN not configured - error tracking disabled
+[Observability] Sentry DSN not found in production. Error tracking is disabled.
 
 // Esperado quando DSN configurado:
-[Sentry] Initialized - env: production, release: 3.5.5-beta
+[Observability] Sentry initialized in production mode.
 ```
 
 **Smoke Test:**

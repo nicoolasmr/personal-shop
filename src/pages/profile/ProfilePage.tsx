@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
     const { user, signOut } = useAuth();
-    const { profile, org, loading, refetch: refetchTenant } = useTenant();
+    const { profile, org, loading, refetch: refetchTenant, error, configured } = useTenant();
     const [isEditing, setIsEditing] = useState(false);
     const [nameDraft, setNameDraft] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,7 +75,24 @@ export default function ProfilePage() {
         updateProfileMutation.mutate({ full_name: nameDraft });
     };
 
+    if (!configured) {
+        return (
+            <div className="flex min-h-[50vh] items-center justify-center text-muted-foreground text-center px-4">
+                Supabase não configurado. Configure as variáveis de ambiente para acessar o perfil.
+            </div>
+        );
+    }
+
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
+
+    if (error) {
+        return (
+            <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center px-4">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button variant="outline" onClick={refetchTenant}>Tentar novamente</Button>
+            </div>
+        );
+    }
 
     const userInitials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'U';
 
