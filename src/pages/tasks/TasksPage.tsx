@@ -18,7 +18,7 @@ export default function TasksPage() {
     const { mutate: moveTask } = useMoveTask();
     const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [selectedTask, setSelectedTask] = useState<TaskWithSubtasks | null>(null);
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [filter, setFilter] = useState('all');
 
     const handleTaskMove = (taskId: string, newStatus: TaskStatus, newIndex: number) => {
@@ -29,7 +29,7 @@ export default function TasksPage() {
     };
 
     const handleTaskClick = (task: TaskWithSubtasks) => {
-        setSelectedTask(task);
+        setSelectedTaskId(task.id);
     };
 
     if (error) {
@@ -48,6 +48,8 @@ export default function TasksPage() {
     const highPriority = taskList.filter(t => t.priority === 'high').length;
 
     const filteredTasks = filter === 'all' ? taskList : taskList; // Todo: Implement logic if needed, currently UI only
+
+    const selectedTask = taskList.find(t => t.id === selectedTaskId) || null;
 
     return (
         <div className="flex flex-col h-[calc(100vh-6rem)] space-y-6">

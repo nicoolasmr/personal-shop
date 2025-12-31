@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, CheckSquare, Paperclip, Clock, Trash2, Plus, X, Tag } from 'lucide-react';
 import { TaskWithSubtasks, TaskStatus, TaskPriority } from '@/types/tasks';
-import { useUpdateTask, useCreateSubtask, useToggleSubtask, useDeleteSubtask } from '@/hooks/queries/useTasks';
+import { useUpdateTask, useCreateSubtask, useToggleSubtask, useDeleteSubtask, useUploadAttachment, useDeleteAttachment } from '@/hooks/queries/useTasks';
 import { cn } from '@/lib/utils';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -43,7 +43,9 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
     const { mutate: updateTask } = useUpdateTask();
     const { mutate: createSubtask } = useCreateSubtask();
     const { mutate: toggleSubtask } = useToggleSubtask();
-    const { mutate: deleteSubtask } = useDeleteSubtask(); // Assuming this hook exists or will be created
+    const { mutate: deleteSubtask } = useDeleteSubtask();
+    const { mutate: uploadAttachment, isPending: isUploading } = useUploadAttachment();
+    const { mutate: deleteAttachment } = useDeleteAttachment();
 
     const [isEditing, setIsEditing] = useState(false);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -58,6 +60,15 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
             due_date: task?.due_date ? new Date(task.due_date) : undefined,
         },
     });
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && task) {
+            uploadAttachment({ taskId: task.id, file });
+        }
+    };
 
     // Reset form when task changes
     if (task && task.id && form.getValues('title') !== task.title && !form.formState.isDirty) {
@@ -110,10 +121,23 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
                         ) : (
                             <div className="space-y-1">
                                 <DialogTitle className="text-xl font-bold break-words">{task.title}</DialogTitle>
-                                <div className="flex flex-wrap gap-2 pt-1">
-                                    <Badge variant={task.status === 'done' ? 'default' : 'secondary'} className="uppercase text-[10px]">
-                                        {task.status === 'todo' ? 'A Fazer' : task.status === 'doing' ? 'Fazendo' : 'Feito'}
-                                    </Badge>
+                                <div className="flex flex-wrap gap-2 pt-1 items-center">
+                                    <Select
+                                        defaultValue={task.status}
+                                        onValueChange={(value) => updateTask({ taskId: task.id, payload: { status: value as TaskStatus } })}
+                                    >
+                                        <SelectTrigger className={cn("w-auto h-6 text-[10px] uppercase font-semibold border-none px-2 focus:ring-0 shadow-none gap-1 rounded-full",
+                                            task.status === 'done' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                                        )}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="todo">A Fazer</SelectItem>
+                                            <SelectItem value="doing">Fazendo</SelectItem>
+                                            <SelectItem value="done">Feito</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
                                     <Badge variant="outline" className={cn("text-[10px]",
                                         task.priority === 'high' ? 'text-red-500 border-red-200 bg-red-50' :
                                             task.priority === 'medium' ? 'text-yellow-600 border-yellow-200 bg-yellow-50' :
@@ -311,11 +335,50 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
                             </ScrollArea>
                         </TabsContent>
 
-                        <TabsContent value="attachments" className="m-0">
-                            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                                <Paperclip className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                                <p>Funcionalidade de anexos em breve.</p>
-                                <Button variant="outline" className="mt-4" disabled>Fazer Upload</Button>
+                        <TabsContent value="attachments" className="m-0 space-y-4">
+                            <ScrollArea className="h-[300px] pr-4">
+                                {task.attachments && task.attachments.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {task.attachments.map((file) => (
+                                            <div key={file.id} className="flex items-center justify-between p-3 bg-background rounded-lg border group hover:border-primary/50 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                        <Paperclip className="h-4 w-4 text-primary" />
+                                                    </div>
+                                                    <div className="overflow-hidden">
+                                                        <p className="text-sm font-medium truncate max-w-[200px]" title={file.file_name}>{file.file_name}</p>
+                                                        <p className="text-xs text-muted-foreground">{file.file_type} • {(file.file_size / 1024).toFixed(1)} KB</p>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    onClick={() => deleteAttachment(file.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                                        <Paperclip className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                                        <p>Nenhum anexo.</p>
+                                    </div>
+                                )}
+                            </ScrollArea>
+                            <div className="flex justify-center flex-col items-center gap-2">
+                                <Input
+                                    type="file"
+                                    className="hidden"
+                                    ref={fileInputRef}
+                                    onChange={handleFileUpload}
+                                />
+                                <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="w-full">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    {isUploading ? "Enviando..." : "Adicionar Anexo"}
+                                </Button>
                             </div>
                         </TabsContent>
                     </div>
