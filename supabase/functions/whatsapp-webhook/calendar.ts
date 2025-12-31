@@ -1,5 +1,5 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Types needed
 interface CalendarEvent {
@@ -10,7 +10,7 @@ interface CalendarEvent {
 }
 
 export async function handleListAgenda(
-    supabase: any,
+    supabase: SupabaseClient,
     userId: string,
     orgId: string,
     period: 'today' | 'tomorrow' | 'upcoming'
@@ -78,7 +78,7 @@ export async function handleListAgenda(
 }
 
 export async function handleCreateEvent(
-    supabase: any,
+    supabase: SupabaseClient,
     userId: string,
     orgId: string,
     rawText: string
@@ -97,8 +97,8 @@ export async function handleCreateEvent(
         return "Não entendi o horário. Tente: *agendar Reunião hoje 15h* ou *amanhã 10:30*";
     }
 
-    let hour = parseInt(timeMatch[1]);
-    let min = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+    const hour = parseInt(timeMatch[1]);
+    const min = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
 
     // Determine Date
     const date = new Date();
