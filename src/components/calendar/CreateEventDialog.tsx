@@ -129,7 +129,7 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate, eventToEdit
         };
 
         if (eventToEdit) {
-            updateEvent({ id: eventToEdit.id, ...payload }, {
+            updateEvent({ id: eventToEdit.id, payload }, {
                 onSuccess: () => {
                     form.reset();
                     onOpenChange(false);
