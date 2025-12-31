@@ -19,6 +19,7 @@ export default function CalendarPage() {
     const [viewMode, setViewMode] = useState<ViewMode>('month');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
 
     // Fetch events. Logic might need optimization for week/day boundaries, but fetching month is safe for now.
     const { data: events, isLoading } = useCalendarEvents(date.getFullYear(), date.getMonth() + 1);
@@ -342,8 +343,12 @@ export default function CalendarPage() {
 
             <CreateEventDialog
                 open={isCreateOpen}
-                onOpenChange={setIsCreateOpen}
+                onOpenChange={(v) => {
+                    setIsCreateOpen(v);
+                    if (!v) setEditEvent(null);
+                }}
                 defaultDate={selectedDate}
+                eventToEdit={editEvent}
             />
 
             {/* Event Details Dialog Reuse */}
@@ -384,10 +389,8 @@ export default function CalendarPage() {
 
                         <div className="flex justify-end gap-2 pt-4 border-t">
                             <Button variant="outline" size="sm" onClick={() => {
+                                setEditEvent(selectedEvent);
                                 setIsCreateOpen(true);
-                                // Note: A robust implementation would pass `selectedEvent` to the dialog to pre-fill it.
-                                // For now, we open the dialog. To fully fix "Edit", we need to update the Dialog to accept `eventToEdit`.
-                                // Let's mark this as partial fix and focus on Delete which is 1-click.
                             }}>
                                 Editar
                             </Button>

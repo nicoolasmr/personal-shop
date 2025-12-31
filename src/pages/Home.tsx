@@ -6,6 +6,7 @@ import { Plus, CheckSquare, DollarSign, Calendar as CalendarIcon, Target, Trendi
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFinance } from '@/hooks/useFinance';
 import { useCalendarEvents, useEventRange } from '@/hooks/queries/useCalendar';
+import { CalendarEvent } from '@/services/calendar';
 import { useTasks } from '@/hooks/queries/useTasks';
 import { useGoals } from '@/hooks/useGoals';
 import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog';
@@ -32,6 +33,7 @@ export default function Home() {
     const [isEventOpen, setIsEventOpen] = useState(false);
     const [isHabitOpen, setIsHabitOpen] = useState(false);
     const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+    const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
 
     // Data Hooks
     const today = new Date();
@@ -181,9 +183,16 @@ export default function Home() {
                         {todaysEvents.length > 0 ? (
                             <div className="space-y-3 overflow-y-auto">
                                 {todaysEvents.slice(0, 3).map(evt => (
-                                    <div key={evt.id} className="flex items-start gap-3 p-2 rounded-lg bg-secondary/30">
+                                    <div
+                                        key={evt.id}
+                                        className="flex items-start gap-3 p-2 rounded-lg bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors"
+                                        onClick={() => {
+                                            setEditEvent(evt);
+                                            setIsEventOpen(true);
+                                        }}
+                                    >
                                         <div className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">
-                                            {format(new Date(evt.start_time), 'HH:mm')}
+                                            {format(new Date(evt.start_at), 'HH:mm')}
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium line-clamp-1">{evt.title}</p>
@@ -283,7 +292,14 @@ export default function Home() {
 
             {/* Dialogs */}
             <CreateTaskDialog open={isTaskOpen} onOpenChange={setIsTaskOpen} />
-            <CreateEventDialog open={isEventOpen} onOpenChange={setIsEventOpen} />
+            <CreateEventDialog
+                open={isEventOpen}
+                onOpenChange={(v) => {
+                    setIsEventOpen(v);
+                    if (!v) setEditEvent(null);
+                }}
+                eventToEdit={editEvent}
+            />
             <CreateHabitDialog open={isHabitOpen} onOpenChange={setIsHabitOpen} />
 
             <Dialog open={isExpenseOpen} onOpenChange={setIsExpenseOpen}>

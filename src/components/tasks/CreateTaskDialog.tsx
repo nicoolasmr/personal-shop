@@ -2,6 +2,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useCreateTask } from '@/hooks/queries/useTasks';
+import { useTenant } from '@/hooks/useTenant';
+import { useAuth } from '@/hooks/useAuth';
+import { createSubtask, uploadAttachment } from '@/services/tasks';
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
     DialogTrigger
@@ -11,8 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TaskStatus, TaskPriority } from '@/types/tasks'; // Removed TASK_PRIORITY_CONFIG if unused
-import { Loader2, Plus } from 'lucide-react';
+import { TaskStatus, TaskPriority } from '@/types/tasks';
+import { Loader2, Plus, Trash2, Paperclip, X } from 'lucide-react';
 import { useState } from 'react';
 
 const createTaskSchema = z.object({
@@ -38,7 +41,13 @@ export function CreateTaskDialog({ open, onOpenChange, defaultStatus = 'todo' }:
     const isOpen = isControlled ? open : internalOpen;
     const setIsOpen = isControlled ? onOpenChange : setInternalOpen;
 
+    const { org } = useTenant();
+    const { user } = useAuth();
     const { mutate: createTask, isPending } = useCreateTask();
+
+    const [subtasks, setSubtasks] = useState<string[]>([]);
+    const [newItem, setNewItem] = useState('');
+    const [attachments, setAttachments] = useState<File[]>([]);
 
     const form = useForm<CreateTaskFormValues>({
         resolver: zodResolver(createTaskSchema),
@@ -50,16 +59,50 @@ export function CreateTaskDialog({ open, onOpenChange, defaultStatus = 'todo' }:
         },
     });
 
+    const handleAddSubtask = () => {
+        if (!newItem.trim()) return;
+        setSubtasks([...subtasks, newItem]);
+        setNewItem('');
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files?.length) {
+            setAttachments([...attachments, ...Array.from(e.target.files)]);
+        }
+    };
+
     const onSubmit = (data: CreateTaskFormValues) => {
+        if (!org || !user) return;
+
         createTask({
             title: data.title,
             description: data.description,
             priority: data.priority as TaskPriority,
             status: data.status as TaskStatus,
         }, {
-            onSuccess: () => {
-                form.reset();
-                setIsOpen?.(false);
+            onSuccess: async (newTask) => {
+                try {
+                    // Create subtasks
+                    if (subtasks.length > 0) {
+                        await Promise.all(subtasks.map(title =>
+                            createSubtask(org.id, user.id, newTask.id, title)
+                        ));
+                    }
+
+                    // Upload attachments
+                    if (attachments.length > 0) {
+                        await Promise.all(attachments.map(file =>
+                            uploadAttachment(org.id, user.id, newTask.id, file)
+                        ));
+                    }
+
+                    form.reset();
+                    setSubtasks([]);
+                    setAttachments([]);
+                    setIsOpen?.(false);
+                } catch (error) {
+                    console.error('Error creating secondary items:', error);
+                }
             }
         });
     };
@@ -71,11 +114,11 @@ export function CreateTaskDialog({ open, onOpenChange, defaultStatus = 'todo' }:
                     <Button><Plus className="mr-2 h-4 w-4" /> Nova Tarefa</Button>
                 </DialogTrigger>
             )}
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Criar Nova Tarefa</DialogTitle>
                     <DialogDescription>
-                        Adicione os detalhes da tarefa abaixo.
+                        Adicione os detalhes da tarefa, subtarefas e anexos.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -101,11 +144,99 @@ export function CreateTaskDialog({ open, onOpenChange, defaultStatus = 'todo' }:
                         />
                     </div>
 
+                    <div className="space-y-2">
+                        <Label>Subtarefas</Label>
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Adicionar subtarefa..."
+                                value={newItem}
+                                onChange={(e) => setNewItem(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddSubtask();
+                                    }
+                                }}
+                            />
+                            <Button type="button" variant="outline" size="icon" onClick={handleAddSubtask}>
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        {subtasks.length > 0 && (
+                            <div className="space-y-1 mt-2">
+                                {subtasks.map((st, index) => (
+                                    <div key={index} className="flex items-center justify-between bg-secondary/20 p-2 rounded text-sm">
+                                        <span>{st}</span>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                                            onClick={() => setSubtasks(subtasks.filter((_, i) => i !== index))}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Anexos</Label>
+                        <div className="flex items-center gap-2">
+                            <Button type="button" variant="outline" size="sm" className="w-full relative">
+                                <Paperclip className="h-4 w-4 mr-2" />
+                                Adicionar Anexo
+                                <input
+                                    type="file"
+                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                    onChange={handleFileChange}
+                                    multiple
+                                />
+                            </Button>
+                        </div>
+                        {attachments.length > 0 && (
+                            <div className="space-y-1 mt-2">
+                                {attachments.map((file, index) => (
+                                    <div key={index} className="flex items-center justify-between bg-secondary/20 p-2 rounded text-sm">
+                                        <span className="truncate max-w-[200px]">{file.name}</span>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                                            onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="level">Prioridade</Label>
+                            <Select
+                                onValueChange={(value) => form.setValue('priority', value as any)}
+                                defaultValue={form.getValues('priority')}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="low">Baixa</SelectItem>
+                                    <SelectItem value="medium">Média</SelectItem>
+                                    <SelectItem value="high">Alta</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="status">Status</Label>
                             <Select
-                                onValueChange={(value: TaskStatus) => form.setValue('status', value)}
+                                onValueChange={(value) => form.setValue('status', value as any)}
                                 defaultValue={form.getValues('status')}
                             >
                                 <SelectTrigger>
@@ -113,30 +244,12 @@ export function CreateTaskDialog({ open, onOpenChange, defaultStatus = 'todo' }:
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="todo">A Fazer</SelectItem>
-                                    <SelectItem value="doing">Fazendo</SelectItem>
-                                    <SelectItem value="done">Feito</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="priority">Prioridade</Label>
-                            <Select
-                                onValueChange={(value: TaskPriority) => form.setValue('priority', value)}
-                                defaultValue={form.getValues('priority')}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent position="popper">
-                                    <SelectItem value="low">Baixa</SelectItem>
-                                    <SelectItem value="medium">Média</SelectItem>
-                                    <SelectItem value="high">Alta</SelectItem>
+                                    <SelectItem value="doing">Em Andamento</SelectItem>
+                                    <SelectItem value="done">Concluído</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
-
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setIsOpen?.(false)}>
                             Cancelar

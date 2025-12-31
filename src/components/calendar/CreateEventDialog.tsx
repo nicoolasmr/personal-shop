@@ -1,18 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format, addHours } from 'date-fns';
+import { format, addHours, parseISO } from 'date-fns';
 import { Calendar as CalendarIcon, Clock, MapPin, Video, AlignLeft } from 'lucide-react';
-import { useCreateEvent } from '@/hooks/queries/useCalendar';
-import { cn } from '@/lib/utils'; // Assuming this exists
+import { useCreateEvent, useUpdateEvent } from '@/hooks/queries/useCalendar';
+import { CalendarEvent } from '@/services/calendar';
+import { cn } from '@/lib/utils';
 
+// ... (imports remain same)
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch'; // Determine if this exists or use check
+import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -37,6 +39,7 @@ interface CreateEventDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     defaultDate?: Date;
+    eventToEdit?: CalendarEvent | null;
 }
 
 const EVENT_COLORS = [
@@ -50,8 +53,11 @@ const EVENT_COLORS = [
     { value: 'gray', label: 'Cinza', class: 'bg-gray-500' },
 ];
 
-export function CreateEventDialog({ open, onOpenChange, defaultDate }: CreateEventDialogProps) {
-    const { mutate: createEvent, isPending } = useCreateEvent();
+export function CreateEventDialog({ open, onOpenChange, defaultDate, eventToEdit }: CreateEventDialogProps) {
+    const { mutate: createEvent, isPending: isCreating } = useCreateEvent();
+    const { mutate: updateEvent, isPending: isUpdating } = useUpdateEvent();
+
+    const isPending = isCreating || isUpdating;
 
     const form = useForm<CreateEventFormValues>({
         resolver: zodResolver(createEventSchema),
@@ -68,6 +74,38 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate }: CreateEve
         },
     });
 
+    // Update form when eventToEdit changes
+    useEffect(() => {
+        if (eventToEdit) {
+            const startAt = new Date(eventToEdit.start_at);
+            const endAt = new Date(eventToEdit.end_at);
+            form.reset({
+                title: eventToEdit.title,
+                description: eventToEdit.description || '',
+                location: eventToEdit.location || '',
+                date: startAt,
+                start_time: format(startAt, 'HH:mm'),
+                end_time: format(endAt, 'HH:mm'),
+                all_day: eventToEdit.all_day || false,
+                type: eventToEdit.location?.toLowerCase().includes('video') ? 'video' : 'presencial', // Simple heuristic
+                color: eventToEdit.color || 'blue',
+            });
+        } else {
+            // Reset to defaults if create mode
+            form.reset({
+                title: '',
+                description: '',
+                location: '',
+                date: defaultDate || new Date(),
+                start_time: format(new Date(), 'HH:00'),
+                end_time: format(addHours(new Date(), 1), 'HH:00'),
+                all_day: false,
+                type: 'presencial',
+                color: 'blue',
+            });
+        }
+    }, [eventToEdit, defaultDate, form]);
+
     const onSubmit = (data: CreateEventFormValues) => {
         // Combine date and time
         const start = new Date(data.date);
@@ -78,13 +116,9 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate }: CreateEve
         const [endHour, endMinute] = data.end_time.split(':').map(Number);
         end.setHours(endHour, endMinute);
 
-        // Handle overnight events if necessary (end < start), assuming same day for MVP or next day if end < start?
-        // Let's assume same day for simplicity unless user changes date end. 
-        // For MVP 1.0 simplify: Single date picker.
-
         const locationFinal = data.type === 'video' ? `(Vídeo) ${data.location || 'Online'}` : data.location;
 
-        createEvent({
+        const payload = {
             title: data.title,
             description: data.description,
             location: locationFinal,
@@ -92,24 +126,40 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate }: CreateEve
             end_at: end,
             all_day: data.all_day,
             color: data.color,
-        }, {
-            onSuccess: () => {
-                form.reset();
-                onOpenChange(false);
-            }
-        });
+        };
+
+        if (eventToEdit) {
+            updateEvent({ id: eventToEdit.id, ...payload }, {
+                onSuccess: () => {
+                    form.reset();
+                    onOpenChange(false);
+                }
+            });
+        } else {
+            createEvent(payload, {
+                onSuccess: () => {
+                    form.reset();
+                    onOpenChange(false);
+                }
+            });
+        }
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>Novo Evento</DialogTitle>
-                    <DialogDescription>Adicione um compromisso à sua agenda.</DialogDescription>
+                    <DialogTitle>{eventToEdit ? 'Editar Evento' : 'Novo Evento'}</DialogTitle>
+                    <DialogDescription>
+                        {eventToEdit ? 'Atualize os detalhes do evento.' : 'Adicione um compromisso à sua agenda.'}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        {/* ... (fields remain same, I'll assume replace_file_content handles the gap if I target Header and Footer separately or use big block) 
+                            Wait, to be safe and avoid matching errors, I'll do two chunks.
+                        */}
                         <FormField
                             control={form.control}
                             name="title"
@@ -274,7 +324,7 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate }: CreateEve
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                             <Button type="submit" disabled={isPending}>
                                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Criar Evento
+                                {eventToEdit ? 'Salvar Alterações' : 'Criar Evento'}
                             </Button>
                         </DialogFooter>
                     </form>
