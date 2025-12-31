@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTasks, useMoveTask } from '@/hooks/queries/useTasks';
 import { TaskBoard } from '@/components/tasks/board/TaskBoard';
+import { TaskList } from '@/components/tasks/TaskList';
 import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog';
 import { TaskDetailsDialog } from '@/components/tasks/TaskDetailsDialog';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { TaskStatus, TaskWithSubtasks } from '@/types/tasks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 export default function TasksPage() {
     const { data: tasks, isLoading, error } = useTasks();
@@ -86,7 +88,26 @@ export default function TasksPage() {
                     </Select>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
+                    <div className="flex bg-muted rounded-md p-1">
+                        <Button
+                            variant={viewMode === 'board' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('board')}
+                            className="h-8 w-8 p-0"
+                        >
+                            <LayoutTemplate className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('list')}
+                            className="h-8 w-8 p-0"
+                        >
+                            <List className="h-4 w-4" />
+                        </Button>
+                    </div>
+
                     <Button onClick={() => setIsCreateDialogOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" /> Nova Tarefa
                     </Button>
@@ -104,13 +125,19 @@ export default function TasksPage() {
                     ))}
                 </div>
             ) : (
-                <div className="flex-1 overflow-x-auto overflow-y-hidden">
-                    {/* Forcing board view as usually preferred for "tasks" page in this style */}
-                    <TaskBoard
-                        tasks={filteredTasks}
-                        onTaskMove={handleTaskMove}
-                        onTaskClick={handleTaskClick}
-                    />
+                <div className={cn("flex-1", viewMode === 'board' ? "overflow-x-auto overflow-y-hidden" : "overflow-y-auto overflow-x-hidden")}>
+                    {viewMode === 'board' ? (
+                        <TaskBoard
+                            tasks={filteredTasks}
+                            onTaskMove={handleTaskMove}
+                            onTaskClick={handleTaskClick}
+                        />
+                    ) : (
+                        <TaskList
+                            tasks={filteredTasks}
+                            onTaskClick={handleTaskClick}
+                        />
+                    )}
                 </div>
             )}
 

@@ -15,7 +15,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TaskStatus, TaskPriority } from '@/types/tasks';
-import { Loader2, Plus, Trash2, Paperclip, X } from 'lucide-react';
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon, Loader2, Plus, Trash2, Paperclip, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { useState } from 'react';
 
 const createTaskSchema = z.object({
@@ -23,6 +27,7 @@ const createTaskSchema = z.object({
     description: z.string().optional(),
     priority: z.enum(['low', 'medium', 'high'] as [string, ...string[]]).optional(),
     status: z.enum(['todo', 'doing', 'done'] as [string, ...string[]]).optional(),
+    due_date: z.date().optional(),
 });
 
 type CreateTaskFormValues = z.infer<typeof createTaskSchema>;
@@ -79,6 +84,7 @@ export function CreateTaskDialog({ open, onOpenChange, defaultStatus = 'todo' }:
             description: data.description,
             priority: data.priority as TaskPriority,
             status: data.status as TaskStatus,
+            due_date: data.due_date ? format(data.due_date, 'yyyy-MM-dd') : undefined,
         }, {
             onSuccess: async (newTask) => {
                 try {
@@ -216,9 +222,39 @@ export function CreateTaskDialog({ open, onOpenChange, defaultStatus = 'todo' }:
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="level">Prioridade</Label>
+                            <Label>Data de Término</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full justify-start text-left font-normal",
+                                            !form.watch('due_date') && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {form.watch('due_date') ? (
+                                            format(form.watch('due_date')!, "PPP")
+                                        ) : (
+                                            <span>Selecione</span>
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={form.watch('due_date')}
+                                        onSelect={(date) => form.setValue('due_date', date)}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="priority">Prioridade</Label>
                             <Select
                                 onValueChange={(value) => form.setValue('priority', value as any)}
                                 defaultValue={form.getValues('priority')}
@@ -233,6 +269,7 @@ export function CreateTaskDialog({ open, onOpenChange, defaultStatus = 'todo' }:
                                 </SelectContent>
                             </Select>
                         </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="status">Status</Label>
                             <Select
