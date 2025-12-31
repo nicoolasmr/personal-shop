@@ -105,7 +105,7 @@ export function CreateTaskDialog({ open, onOpenChange, defaultStatus = 'todo' }:
                         <div className="space-y-2">
                             <Label htmlFor="status">Status</Label>
                             <Select
-                                onValueChange={(value) => form.setValue('status', value as any)}
+                                onValueChange={(value: TaskStatus) => form.setValue('status', value)}
                                 defaultValue={form.getValues('status')}
                             >
                                 <SelectTrigger>
@@ -122,7 +122,7 @@ export function CreateTaskDialog({ open, onOpenChange, defaultStatus = 'todo' }:
                         <div className="space-y-2">
                             <Label htmlFor="priority">Prioridade</Label>
                             <Select
-                                onValueChange={(value) => form.setValue('priority', value as any)}
+                                onValueChange={(value: TaskPriority) => form.setValue('priority', value)}
                                 defaultValue={form.getValues('priority')}
                             >
                                 <SelectTrigger>

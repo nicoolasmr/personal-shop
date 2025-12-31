@@ -37,7 +37,7 @@ export default function CalendarPage() {
     const monthdays = getMonthDays();
     const weeks = [];
     let week = [];
-    for (let day of monthdays) {
+    for (const day of monthdays) {
         week.push(day);
         if (week.length === 7) {
             weeks.push(week);

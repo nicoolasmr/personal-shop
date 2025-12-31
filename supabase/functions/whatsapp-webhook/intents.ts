@@ -1,9 +1,14 @@
 
 export type IntentType = 'LINK_CODE' | 'LIST_AGENDA' | 'CREATE_EVENT' | 'HELP' | 'UNKNOWN';
 
+type IntentPayload =
+    | { code: string }
+    | { period: 'today' | 'tomorrow' | 'upcoming' }
+    | { raw: string };
+
 export interface IntentResult {
     type: IntentType;
-    payload?: any;
+    payload?: IntentPayload;
 }
 
 export function classifyIntent(text: string): IntentResult {

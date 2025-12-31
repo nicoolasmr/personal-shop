@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Filter, TrendingUp, TrendingDown, CreditCard, DollarSign, BarChart3, PieChart, Info, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Plus, Filter, TrendingUp, TrendingDown, CreditCard, DollarSign, BarChart3, PieChart, Info, ArrowUpRight, ArrowDownRight, type LucideIcon } from 'lucide-react';
 import { useFinance } from '@/hooks/useFinance';
 import { formatCurrency, getMonthName } from '@/types/finance';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -21,7 +21,7 @@ const MetricCard = ({
 }: {
     title: string;
     value: string | number;
-    icon?: any;
+    icon?: LucideIcon;
     trend?: 'up' | 'down';
     colorClass?: string;
     subtitle?: string;

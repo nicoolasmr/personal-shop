@@ -1,5 +1,5 @@
 export type AppRole = 'owner' | 'admin' | 'member';
-export type Json = any;
+export type Json = unknown;
 
 export interface Database {
     public: {

@@ -20,6 +20,11 @@ export interface UpdateEventPayload extends Partial<CreateEventPayload> {
     id: string;
 }
 
+type UpdateEventData = Partial<Omit<CreateEventPayload, 'start_at' | 'end_at'>> & {
+    start_at?: string;
+    end_at?: string;
+};
+
 export const calendarService = {
     /**
      * List events within a date range.
@@ -66,7 +71,7 @@ export const calendarService = {
      * Update an existing event.
      */
     async updateEvent(id: string, payload: Partial<CreateEventPayload>) {
-        const updateData: any = { ...payload };
+        const updateData: UpdateEventData = { ...payload };
 
         // Convert dates to ISO if present
         if (payload.start_at) updateData.start_at = payload.start_at.toISOString();
