@@ -1,6 +1,7 @@
 import React, { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCcw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { captureException } from '@/lib/observability/sentry';
 
 interface Props {
     children: ReactNode;
@@ -22,7 +23,7 @@ export class RuntimeErrorBoundary extends React.Component<Props, State> {
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error("Uncaught VIDA360 error:", error, errorInfo);
-        // In production, we'd send to Sentry here
+        captureException(error, { componentStack: errorInfo.componentStack });
     }
 
     private handleReset = () => {

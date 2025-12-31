@@ -816,6 +816,7 @@ SELECT COUNT(*) as total_subscriptions FROM push_subscriptions;
 | `VITE_APP_VERSION` | Versão do app (opcional) | Lovable Secrets |
 
 **Nota:** Se `VITE_SENTRY_DSN` não estiver configurado, Sentry será desabilitado automaticamente (sem erros).
+- Client único exposto em `src/lib/observability/sentry.ts` (o cliente legado foi removido). Use apenas `initSentry`, `captureException` e `getSentryStatus`.
 
 #### Funcionalidades
 
@@ -830,7 +831,7 @@ No console do navegador:
 ```javascript
 // Verificar se Sentry está ativo
 import { getSentryStatus } from '@/lib/observability/sentry';
-getSentryStatus(); // { enabled: true/false, dsn: true/false, ... }
+getSentryStatus(); // { initialized, dsnConfigured, environment, release }
 ```
 
 ### Bug Reports

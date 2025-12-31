@@ -201,11 +201,12 @@ WHERE tgname IN (
 ---
 
 ## Observability Checks
-
+ 
 ### Sentry
 
 1. **Verificar inicialização:**
-   - Console deve mostrar `[Sentry] Initialized` ou `[Sentry] DSN not configured`
+   - Console deve mostrar `[Observability] Sentry initialized in <env> mode.` quando `VITE_SENTRY_DSN` estiver configurado
+   - Em produção, se DSN estiver ausente, console deve registrar warning único: `[Observability] Sentry DSN not found in production. Error tracking is disabled.`
 
 2. **Testar captura de erro:**
    ```javascript
