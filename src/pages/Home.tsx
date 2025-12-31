@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
 export default function Home() {
-    const { profile, loading: profileLoading } = useTenant();
+    const { profile, loading: profileLoading, error: tenantError, configured, refetch } = useTenant();
 
     // Dialog States
     const [isTaskOpen, setIsTaskOpen] = useState(false);
@@ -54,6 +54,24 @@ export default function Home() {
         if (hour < 18) return 'Boa tarde';
         return 'Boa noite';
     };
+
+    if (!configured) {
+        return (
+            <div className="flex min-h-[60vh] items-center justify-center text-muted-foreground text-center px-4">
+                Supabase não configurado. Defina as variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` para habilitar os dados do dashboard.
+            </div>
+        );
+    }
+
+    if (tenantError) {
+        return (
+            <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center px-4">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+                <p className="text-sm text-muted-foreground">{tenantError}</p>
+                <Button variant="outline" onClick={refetch}>Tentar novamente</Button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">

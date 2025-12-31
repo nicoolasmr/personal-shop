@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { isFeatureEnabled } from '@/lib/flags';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseConfigured } from '@/lib/supabase';
 
 // Helper to check role - this will be replaced by a proper hook later
 // For now we check "profile.role" or "org.role" if available
@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 // REAL RBAC will be fully enforced in Sprint 1 via Database.
 
 const OpsGuard = () => {
-    const { user, loading } = useAuth();
+    const { user, loading, configured } = useAuth();
     const enabled = isFeatureEnabled('admin_console_enabled');
 
     // Fetch user role briefly to block non-staff if possible, even in Sprint 0?
@@ -38,7 +38,7 @@ const OpsGuard = () => {
             // @ts-expect-error - Known temporary type mismatch with Supabase roles
             return data?.role as string | null;
         },
-        enabled: !!user && enabled, // Only check if user is allowed and flag is on
+        enabled: !!user && enabled && configured && supabaseConfigured, // Only check if user is allowed and flag is on
     });
 
 
@@ -56,6 +56,14 @@ const OpsGuard = () => {
 
     if (loading || roleLoading) {
         return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-slate-500">Verifying Clearance...</div>;
+    }
+
+    if (!configured || !supabaseConfigured) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-slate-900 px-6 text-center text-slate-400">
+                Console de operações indisponível: Supabase não configurado.
+            </div>
+        );
     }
 
     if (!user) {

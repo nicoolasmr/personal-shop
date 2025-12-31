@@ -2,26 +2,21 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Signup() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [loading, setLoading] = useState(false);
+    const { signUp, configured } = useAuth();
     const navigate = useNavigate();
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: { full_name: fullName }
-            }
-        });
+        const { error } = await signUp(email, password, fullName);
         if (error) {
             alert(error.message);
         } else {
@@ -52,7 +47,7 @@ export default function Signup() {
                             <label className="text-sm font-medium">Senha</label>
                             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
                         </div>
-                        <Button className="w-full" disabled={loading}>
+                        <Button className="w-full" disabled={loading || !configured}>
                             {loading ? 'Cadastrando...' : 'Cadastrar'}
                         </Button>
                     </form>
