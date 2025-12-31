@@ -39,7 +39,11 @@ export function useCreateEvent() {
         },
         onError: (error) => {
             console.error('Create event error:', error);
-            toast({ title: 'Erro ao criar evento', variant: 'destructive' });
+            toast({
+                title: 'Erro ao criar evento',
+                description: error instanceof Error ? error.message : 'Erro desconhecido',
+                variant: 'destructive'
+            });
         },
     });
 }
@@ -56,7 +60,11 @@ export function useUpdateEvent() {
         },
         onError: (error) => {
             console.error('Update event error:', error);
-            toast({ title: 'Erro ao atualizar evento', variant: 'destructive' });
+            toast({
+                title: 'Erro ao atualizar evento',
+                description: error instanceof Error ? error.message : 'Erro desconhecido',
+                variant: 'destructive'
+            });
         },
     });
 }
@@ -72,7 +80,11 @@ export function useDeleteEvent() {
         },
         onError: (error) => {
             console.error('Delete event error:', error);
-            toast({ title: 'Erro ao excluir evento', variant: 'destructive' });
+            toast({
+                title: 'Erro ao excluir evento',
+                description: error instanceof Error ? error.message : 'Erro desconhecido',
+                variant: 'destructive'
+            });
         },
     });
 }

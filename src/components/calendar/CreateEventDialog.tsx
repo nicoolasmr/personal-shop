@@ -107,14 +107,19 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate, eventToEdit
     }, [eventToEdit, defaultDate, form]);
 
     const onSubmit = (data: CreateEventFormValues) => {
-        // Combine date and time
         const start = new Date(data.date);
-        const [startHour, startMinute] = data.start_time.split(':').map(Number);
-        start.setHours(startHour, startMinute);
-
         const end = new Date(data.date);
-        const [endHour, endMinute] = data.end_time.split(':').map(Number);
-        end.setHours(endHour, endMinute);
+
+        if (data.all_day) {
+            start.setHours(0, 0, 0, 0);
+            end.setHours(23, 59, 59, 999);
+        } else {
+            const [startHour, startMinute] = data.start_time.split(':').map(Number);
+            start.setHours(startHour, startMinute);
+
+            const [endHour, endMinute] = data.end_time.split(':').map(Number);
+            end.setHours(endHour, endMinute);
+        }
 
         const locationFinal = data.type === 'video' ? `(Vídeo) ${data.location || 'Online'}` : data.location;
 
@@ -269,7 +274,7 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate, eventToEdit
                                     render={({ field }) => (
                                         <FormItem className="flex-1">
                                             <FormLabel>Início</FormLabel>
-                                            <FormControl><Input type="time" {...field} /></FormControl>
+                                            <FormControl><Input type="time" {...field} disabled={form.watch('all_day')} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -280,7 +285,7 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate, eventToEdit
                                     render={({ field }) => (
                                         <FormItem className="flex-1">
                                             <FormLabel>Fim</FormLabel>
-                                            <FormControl><Input type="time" {...field} /></FormControl>
+                                            <FormControl><Input type="time" {...field} disabled={form.watch('all_day')} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
