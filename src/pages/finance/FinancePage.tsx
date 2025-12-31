@@ -1,157 +1,243 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Plus, ChevronLeft, ChevronRight, DollarSign, CreditCard, Target, Filter } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Filter, TrendingUp, TrendingDown, CreditCard, DollarSign, BarChart3, PieChart, Info, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useFinance } from '@/hooks/useFinance';
-import { formatCurrency, getMonthName, PaymentMethod, ActiveInstallment } from '@/types/finance';
+import { formatCurrency, getMonthName } from '@/types/finance';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TransactionForm } from '@/components/finance/TransactionForm';
-import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Placeholders for components not yet created but referenced
-const FinanceSummary = ({ summary }: { summary: { total_income: number; total_expense: number; balance: number } }) => (
-    <div className="grid grid-cols-3 gap-4">
-        <Card>
-            <CardHeader className="p-4 pb-2"><CardTitle className="text-sm">Receitas</CardTitle></CardHeader>
-            <CardContent className="p-4 pt-0 text-xl font-bold text-green-600">+{formatCurrency(summary.total_income)}</CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="p-4 pb-2"><CardTitle className="text-sm">Despesas</CardTitle></CardHeader>
-            <CardContent className="p-4 pt-0 text-xl font-bold text-red-600">-{formatCurrency(summary.total_expense)}</CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="p-4 pb-2"><CardTitle className="text-sm">Saldo</CardTitle></CardHeader>
-            <CardContent className={`p-4 pt-0 text-xl font-bold ${summary.balance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                {formatCurrency(summary.balance)}
-            </CardContent>
-        </Card>
-    </div>
+// Metric Card Component
+const MetricCard = ({
+    title,
+    value,
+    icon: Icon,
+    trend,
+    colorClass,
+    subtitle
+}: {
+    title: string;
+    value: string | number;
+    icon?: any;
+    trend?: 'up' | 'down';
+    colorClass?: string;
+    subtitle?: string;
+}) => (
+    <Card>
+        <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+                {Icon && (
+                    <div className={cn("h-12 w-12 rounded-lg flex items-center justify-center", colorClass || "bg-gray-100 text-gray-600")}>
+                        <Icon className="h-6 w-6" />
+                    </div>
+                )}
+                <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">{title}</p>
+                    <div className="flex items-center gap-2">
+                        <h3 className={cn("text-2xl font-bold", trend === 'up' ? "text-green-600" : trend === 'down' ? "text-red-600" : "")}>
+                            {value}
+                        </h3>
+                        {trend === 'up' && <TrendingUp className="h-4 w-4 text-green-600" />}
+                        {trend === 'down' && <TrendingDown className="h-4 w-4 text-red-600" />}
+                    </div>
+                    {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+                </div>
+            </div>
+        </CardContent>
+    </Card>
 );
-
-const TransactionCard = ({ transaction }: { transaction: { description: string; transaction_date: string; type: 'income' | 'expense'; amount: number } }) => (
-    <div className="flex items-center justify-between p-3 border rounded-lg bg-card mb-2">
-        <div>
-            <div className="font-medium">{transaction.description}</div>
-            <div className="text-xs text-muted-foreground">{new Date(transaction.transaction_date).toLocaleDateString()}</div>
-        </div>
-        <div className={`font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-            {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-        </div>
-    </div>
-);
-
-const GoalsList = ({ goals }: { goals: Array<{ id: string; name: string; target_amount: number; current_amount: number; progress: number }> | undefined }) => (
-    <div className="grid gap-4 md:grid-cols-2">
-        {goals?.map((goal) => (
-            <Card key={goal.id}>
-                <CardHeader className="p-4"><CardTitle className="text-base">{goal.name}</CardTitle><CardDescription>Meta: {formatCurrency(goal.target_amount)}</CardDescription></CardHeader>
-                <CardContent className="p-4 pt-0">
-                    <div className="text-2xl font-bold">{formatCurrency(goal.current_amount)}</div>
-                </CardContent>
-            </Card>
-        ))}
-        {goals?.length === 0 && <p className="text-muted-foreground p-4">Nenhuma meta configurada.</p>}
-    </div>
-)
 
 export default function FinancePage() {
+    // Basic state for month selection (defaulting to current for now)
     const [year, setYear] = useState(new Date().getFullYear());
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [modalOpen, setModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('transactions');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [filterMethod, setFilterMethod] = useState('all');
 
-    // Updated useFinance to accept year/month params for real-time filtering
     const {
         transactions,
-        financeGoals,
         summary,
-        installments,
         installmentsSummary,
         isLoading
     } = useFinance(year, month);
 
-    const handlePrevMonth = () => {
-        if (month === 1) { setMonth(12); setYear(year - 1); }
-        else setMonth(month - 1);
-    }
-    const handleNextMonth = () => {
-        if (month === 12) { setMonth(1); setYear(year + 1); }
-        else setMonth(month + 1);
+    if (isLoading) {
+        return <div className="p-8 space-y-4">
+            <Skeleton className="h-12 w-1/3" />
+            <div className="grid grid-cols-4 gap-4"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div>
+        </div>
     }
 
-    if (isLoading) return <div>Carregando finanças...</div>;
+    const transactionList = transactions || [];
+    // Mocking chart data check
+    const hasChartData = transactionList.length > 0;
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">Finanças</h1>
+                    <p className="text-muted-foreground">Controle suas receitas e despesas</p>
                 </div>
-                <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
-                    <Button variant="ghost" size="icon" onClick={handlePrevMonth}><ChevronLeft className="h-4 w-4" /></Button>
-                    <span className="font-medium min-w-[120px] text-center">{getMonthName(month)} {year}</span>
-                    <Button variant="ghost" size="icon" onClick={handleNextMonth}><ChevronRight className="h-4 w-4" /></Button>
-                </div>
-                <Button onClick={() => setModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Nova Transação</Button>
+                <Button onClick={() => setModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" /> Nova Transação
+                </Button>
             </div>
 
-            <FinanceSummary summary={summary} />
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricCard
+                    title="Saldo Atual"
+                    value={formatCurrency(summary.balance)}
+                    trend={summary.balance >= 0 ? 'up' : 'down'}
+                // No icon for this one in screenshot, just value? Screenshot has value with trend. 
+                // Let's keep it simple or match distinct style. 
+                // Actually screenshot shows clean "Saldo Atual" left, Value Green big. 
+                // Let's use a simpler card structure for the first one if needed, but MetricCard is flexible.
+                />
+                <MetricCard
+                    title="Receitas"
+                    value={formatCurrency(summary.total_income)}
+                    icon={ArrowUpRight}
+                    colorClass="bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+                />
+                <MetricCard
+                    title="Despesas"
+                    value={formatCurrency(summary.total_expense)}
+                    icon={ArrowDownRight}
+                    colorClass="bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                />
+                <MetricCard
+                    title="Parcelas"
+                    value={installmentsSummary.active_count || 0}
+                    icon={CreditCard}
+                    colorClass="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
+                    subtitle="Este mês"
+                />
+            </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="transactions">Transações</TabsTrigger>
-                    <TabsTrigger value="goals">Metas</TabsTrigger>
-                    <TabsTrigger value="installments">Parcelas</TabsTrigger>
-                    <TabsTrigger value="credit-card">Cartão</TabsTrigger>
-                </TabsList>
+            {/* Filters */}
+            <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Filter className="h-4 w-4" />
+                    <span>Filtros</span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg bg-card">
+                    <Select value={`${month}`} onValueChange={(v) => setMonth(Number(v))}>
+                        <SelectTrigger className="w-full sm:w-[200px]">
+                            <SelectValue placeholder="Este mês" />
+                        </SelectTrigger>
+                        <SelectContent maxHeight={300}>
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                                <SelectItem key={m} value={`${m}`}>{getMonthName(m)}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
-                <TabsContent value="transactions" className="space-y-4 pt-4">
-                    {transactions?.map(t => <TransactionCard key={t.id} transaction={t} />)}
-                    {transactions?.length === 0 && <div className="text-center py-8 text-muted-foreground">Nenhuma transação neste período.</div>}
-                </TabsContent>
+                    <Select value={filterCategory} onValueChange={setFilterCategory}>
+                        <SelectTrigger className="w-full sm:w-[200px]">
+                            <SelectValue placeholder="Todas as categorias" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todas as categorias</SelectItem>
+                            {/* Dynamically populate later */}
+                            <SelectItem value="food">Alimentação</SelectItem>
+                            <SelectItem value="transport">Transporte</SelectItem>
+                        </SelectContent>
+                    </Select>
 
-                <TabsContent value="goals" className="pt-4">
-                    <GoalsList goals={financeGoals} />
-                </TabsContent>
+                    <Select value={filterMethod} onValueChange={setFilterMethod}>
+                        <SelectTrigger className="w-full sm:w-[200px]">
+                            <SelectValue placeholder="Todos os métodos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos os métodos</SelectItem>
+                            <SelectItem value="credit">Cartão de Crédito</SelectItem>
+                            <SelectItem value="pix">Pix</SelectItem>
+                            <SelectItem value="money">Dinheiro</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
 
-                <TabsContent value="installments" className="pt-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <Card>
-                            <CardHeader className="p-4"><CardTitle className="text-sm">Comprometimento Mensal</CardTitle></CardHeader>
-                            <CardContent className="p-4 pt-0 text-xl font-bold">{formatCurrency(installmentsSummary.total_monthly_commitment)}</CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="p-4"><CardTitle className="text-sm">Total Restante</CardTitle></CardHeader>
-                            <CardContent className="p-4 pt-0 text-xl font-bold">{formatCurrency(installmentsSummary.total_remaining_amount)}</CardContent>
-                        </Card>
-                    </div>
-                    <div className="space-y-2">
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="min-h-[300px]">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <BarChart3 className="h-4 w-4" /> Fluxo de Caixa
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[250px] flex items-center justify-center text-muted-foreground bg-muted/5 mx-6 mb-6 rounded-lg border border-dashed">
+                        {hasChartData ? (
+                            <span>Gráfico em breve (Recharts)</span>
+                        ) : (
+                            <span className="text-sm">Sem dados suficientes para o gráfico.</span>
+                        )}
+                    </CardContent>
+                </Card>
 
-                        <h3 className="font-medium px-1">Parcelamentos Ativos</h3>
-                        {installments?.map((inst: ActiveInstallment) => (
-                            <Card key={inst.id}>
-                                <CardContent className="p-4 flex justify-between items-center">
-                                    <div>
-                                        <div className="font-medium">{inst.description}</div>
-                                        <div className="text-xs text-muted-foreground">{inst.installment_number}/{inst.installment_count} parcelas</div>
+                <Card className="min-h-[300px]">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <PieChart className="h-4 w-4" /> Top Categorias
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[250px] flex items-center justify-center text-muted-foreground bg-muted/5 mx-6 mb-6 rounded-lg border border-dashed">
+                        {hasChartData ? (
+                            <span>Gráfico em breve (Recharts)</span>
+                        ) : (
+                            <span className="text-sm">Sem dados de categorias para exibir.</span>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Recent Transactions List */}
+            <Card className="min-h-[300px]">
+                <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+                    <CardTitle className="text-base">Transações Recentes</CardTitle>
+                    <span className="text-xs text-muted-foreground">{transactionList.length} transações</span>
+                </CardHeader>
+                <CardContent className="p-0">
+                    {transactionList.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
+                            <DollarSign className="h-16 w-16 mb-4 opacity-10" />
+                            <p className="text-sm font-medium">Nenhuma transação encontrada</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y relative">
+                            {/* Header Row */}
+                            <div className="grid grid-cols-4 p-4 text-xs font-medium text-muted-foreground bg-muted/30">
+                                <div className="col-span-2">Descrição</div>
+                                <div className="text-center">Data</div>
+                                <div className="text-right">Valor</div>
+                            </div>
+                            {/* List */}
+                            {transactionList.map(t => (
+                                <div key={t.id} className="grid grid-cols-4 p-4 text-sm hover:bg-muted/30 transition-colors items-center">
+                                    <div className="col-span-2 font-medium">
+                                        {t.description}
+                                        <div className="text-xs text-muted-foreground font-normal">{t.category || 'Geral'} • {t.payment_method === 'credit_card' ? 'Cartão' : 'Pix'}</div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="font-bold">{formatCurrency(inst.amount)}</div>
-                                        <div className="text-xs text-muted-foreground">Faltam {formatCurrency(inst.amount * (inst.installment_count - inst.installment_number + 1))}</div>
+                                    <div className="text-center text-muted-foreground text-xs">
+                                        {new Date(t.transaction_date).toLocaleDateString()}
                                     </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </TabsContent>
+                                    <div className={cn("text-right font-medium", t.type === 'income' ? "text-green-600" : "text-red-600")}>
+                                        {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
-                <TabsContent value="credit-card" className="pt-4">
-                    <div className="text-center py-8 text-muted-foreground">Relatório de cartão em desenvolvimento.</div>
-                </TabsContent>
-            </Tabs>
-
-            {/* Mock Modal for now */}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
                 <DialogContent>
                     <DialogHeader>

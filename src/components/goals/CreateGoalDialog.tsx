@@ -12,11 +12,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { GOAL_TYPE_CONFIGS, GoalType } from '@/types/goals'; // Use the shared config
 
 const createGoalSchema = z.object({
     title: z.string().min(1, 'Título é obrigatório'),
     description: z.string().optional(),
-    type: z.enum(['financial', 'health', 'learning', 'other'] as [string, ...string[]]),
+    type: z.string(), // Relaxed to allow dynamic types from config, validation still works if we passed enum but string is safer with dynamic keys
     target_value: z.coerce.number().min(1, 'Valor alvo deve ser maior que 0'),
     start_date: z.string().min(1, 'Data de início é obrigatória'),
     deadline: z.string().min(1, 'Data limite é obrigatória'),
@@ -38,7 +39,7 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
         defaultValues: {
             title: '',
             description: '',
-            type: 'other',
+            type: 'custom', // Default
             target_value: 0,
             unit: 'un',
             start_date: new Date().toISOString().split('T')[0],
@@ -46,22 +47,22 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
         },
     });
 
-    const selectedType = useWatch({ control: form.control, name: 'type' });
+    const selectedType = useWatch({ control: form.control, name: 'type' }) as GoalType;
 
     // Auto-update unit based on type
     const handleTypeChange = (value: string) => {
         form.setValue('type', value);
-        if (value === 'financial') form.setValue('unit', 'R$');
-        else if (value === 'health') form.setValue('unit', 'kg'); // Default assumption, editable
-        else if (value === 'learning') form.setValue('unit', 'pág');
-        else form.setValue('unit', 'un');
+        const config = GOAL_TYPE_CONFIGS[value as GoalType];
+        if (config) {
+            form.setValue('unit', config.defaultUnit);
+        }
     };
 
     const onSubmit = (data: CreateGoalFormValues) => {
         createGoal({
             ...data,
+            type: data.type as GoalType,
             current_value: 0,
-            status: 'active',
         }, {
             onSuccess: () => {
                 form.reset();
@@ -102,11 +103,18 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
                                     <FormLabel>Categoria</FormLabel>
                                     <Select onValueChange={handleTypeChange} defaultValue={field.value}>
                                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                        <SelectContent position="popper">
-                                            <SelectItem value="financial">Financeiro</SelectItem>
-                                            <SelectItem value="health">Saúde & Bem-estar</SelectItem>
-                                            <SelectItem value="learning">Aprendizado</SelectItem>
-                                            <SelectItem value="other">Outros</SelectItem>
+                                        <SelectContent position="popper" className="max-h-[200px]">
+                                            {/* Render simplified list or full list from config */}
+                                            <SelectItem value="custom">Personalizada</SelectItem>
+                                            <SelectItem value="financial">Financeira</SelectItem>
+                                            <SelectItem value="health">Saúde</SelectItem>
+                                            <SelectItem value="weight">Perda de Peso</SelectItem>
+                                            <SelectItem value="sleep">Sono</SelectItem>
+                                            <SelectItem value="exercise">Exercício</SelectItem>
+                                            <SelectItem value="reading">Leitura</SelectItem>
+                                            <SelectItem value="study">Estudo</SelectItem>
+                                            <SelectItem value="task">Tarefas</SelectItem>
+                                            <SelectItem value="habit">Hábito</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />

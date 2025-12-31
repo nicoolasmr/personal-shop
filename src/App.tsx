@@ -2,7 +2,6 @@ import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantProvider } from "@/hooks/useTenant";
@@ -21,6 +20,7 @@ const Home = lazy(() => import("./pages/Home"));
 const AppLayout = lazy(() => import("./layouts/AppLayout"));
 const Tasks = lazy(() => import("./pages/tasks/TasksPage"));
 const Goals = lazy(() => import("./pages/goals/GoalsPage"));
+const Habits = lazy(() => import("./pages/habits/HabitsPage")); // New page
 const Statistics = lazy(() => import("./pages/statistics/StatisticsPage"));
 const Finance = lazy(() => import("./pages/finance/FinancePage"));
 const CalendarPage = lazy(() => import("./pages/calendar/CalendarPage"));
@@ -69,7 +69,7 @@ const App = () => (
                                     <Route index element={<Navigate to="/app/home" replace />} />
                                     <Route path="home" element={<Home />} />
                                     <Route path="tasks" element={<Tasks />} />
-                                    <Route path="habits" element={<Navigate to="/app/goals?tab=habits" replace />} />
+                                    <Route path="habits" element={<Habits />} />
                                     <Route path="goals" element={<Goals />} />
                                     <Route path="stats" element={<Statistics />} />
                                     <Route path="finance" element={<Finance />} />

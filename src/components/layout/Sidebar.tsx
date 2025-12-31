@@ -1,7 +1,7 @@
 
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Home, CheckSquare, Target, BarChart2, DollarSign, Calendar, User, Settings, LogOut } from 'lucide-react';
+import { Home, CheckSquare, Target, Activity, BarChart2, DollarSign, Calendar, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 
@@ -13,15 +13,17 @@ interface SidebarProps {
 export function Sidebar({ className, onItemClick }: SidebarProps) {
     const { signOut } = useAuth();
 
-    // Using NavLinks for active state management automatically
+    // Updated navigation items to match the user's uploaded images
     const navItems = [
         { to: '/app/home', icon: Home, label: 'Início' },
         { to: '/app/tasks', icon: CheckSquare, label: 'Tarefas' },
-        { to: '/app/goals', icon: Target, label: 'Metas & Hábitos' },
         { to: '/app/finance', icon: DollarSign, label: 'Finanças' },
         { to: '/app/calendar', icon: Calendar, label: 'Agenda' },
+        { to: '/app/habits', icon: Activity, label: 'Hábitos' },
+        { to: '/app/goals', icon: Target, label: 'Metas' },
         { to: '/app/stats', icon: BarChart2, label: 'Estatísticas' },
         { to: '/app/profile', icon: User, label: 'Perfil' },
+        // Settings moved to bottom/separate section visually often, but here list is fine
         { to: '/app/settings', icon: Settings, label: 'Configurações' },
     ];
 
@@ -39,10 +41,10 @@ export function Sidebar({ className, onItemClick }: SidebarProps) {
                         onClick={onItemClick}
                         className={({ isActive }) => cn(
                             "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                            isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                            isActive ? "bg-accent text-accent-foreground text-primary" : "text-muted-foreground"
                         )}
                     >
-                        <item.icon className="h-4 w-4" />
+                        <item.icon className={cn("h-4 w-4", ({ isActive }: any) => isActive && "text-primary")} />
                         {item.label}
                     </NavLink>
                 ))}

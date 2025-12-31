@@ -1,104 +1,179 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Target, Plus, Search, Filter, Calendar as CalendarIcon, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
-import { useGoals } from '@/hooks/useGoals';
-import { useHabits } from '@/hooks/useHabits';
-import { Goal, GoalStatus, calculateProgress } from '@/types/goals';
+import { Plus, Target, CheckCircle2, AlertCircle, TrendingUp, Calendar, Trash2, Edit2 } from 'lucide-react';
+import { useGoals, useAddProgress } from '@/hooks/useGoals';
 import { CreateGoalDialog } from '@/components/goals/CreateGoalDialog';
-import { CreateHabitDialog } from '@/components/goals/CreateHabitDialog';
+import { Goal, calculateProgress, GoalStatus, isGoalOverdue, GOAL_TYPE_CONFIGS, GoalType } from '@/types/goals';
+import { cn } from '@/lib/utils';
+import { Loader2, Check } from 'lucide-react';
 
 export default function GoalsPage() {
-    const [activeTab, setActiveTab] = useState('goals');
-    const [isCreateGoalOpen, setIsCreateGoalOpen] = useState(false);
-    const [isCreateHabitOpen, setIsCreateHabitOpen] = useState(false);
-    const { data: goals, isLoading: goalsLoading } = useGoals();
-    const { data: habits, isLoading: habitsLoading } = useHabits();
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const { data: goals, isLoading } = useGoals();
+    const { mutate: addProgress } = useAddProgress();
 
-    if (goalsLoading || habitsLoading) return <div>Carregando...</div>;
+    // Filter state
+    const [activeTab, setActiveTab] = useState('all');
+
+    // Local state for progress inputs
+    const [progressInputs, setProgressInputs] = useState<Record<string, string>>({});
+    const [updatingGoalId, setUpdatingGoalId] = useState<string | null>(null);
+
+    if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
+
+    const goalsList = goals || [];
+
+    // Metrics
+    const totalGoals = goalsList.length;
+    const completedGoals = goalsList.filter(g => g.status === 'done').length;
+    const activeGoals = goalsList.filter(g => g.status === 'active').length;
+    const overdueGoals = goalsList.filter(g => isGoalOverdue(g)).length;
+
+    const handleQuickProgress = (goalId: string) => {
+        const value = parseFloat(progressInputs[goalId]);
+        if (isNaN(value) || value <= 0) return;
+
+        setUpdatingGoalId(goalId);
+        addProgress({ goalId, payload: { delta_value: value, note: 'Progresso rápido via card' } }, {
+            onSuccess: () => {
+                setProgressInputs(prev => ({ ...prev, [goalId]: '' }));
+            },
+            onSettled: () => setUpdatingGoalId(null)
+        });
+    };
+
+    const categories = Array.from(new Set(goalsList.map(g => g.type)));
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                 <div>
-                    <h1 className="text-2xl font-bold">Metas &amp; Hábitos</h1>
-                    <p className="text-muted-foreground">Gerencie seus objetivos e rotinas</p>
+                    <h1 className="text-2xl font-bold">Metas</h1>
+                    <p className="text-muted-foreground">Defina e acompanhe seus objetivos</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button onClick={() => setIsCreateGoalOpen(true)}><Plus className="h-4 w-4 mr-2" />Nova Meta</Button>
-                    <Button variant="outline" onClick={() => setIsCreateHabitOpen(true)}><Plus className="h-4 w-4 mr-2" />Novo Hábito</Button>
-                </div>
+                <Button onClick={() => setIsCreateOpen(true)}><Plus className="h-4 w-4 mr-2" /> Nova Meta</Button>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                {/* ... Tabs Content same as before ... */}
-                <TabsList>
-                    <TabsTrigger value="goals" className="flex gap-2"><Target className="h-4 w-4" />Metas</TabsTrigger>
-                    <TabsTrigger value="habits" className="flex gap-2"><RefreshCw className="h-4 w-4" />Hábitos</TabsTrigger>
+            {/* Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total</CardTitle>
+                        <Target className="h-4 w-4 text-blue-500" />
+                    </CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{totalGoals}</div></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Concluídas</CardTitle>
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    </CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{completedGoals}</div></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Em Progresso</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-blue-600" />
+                    </CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{activeGoals}</div></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Atrasadas</CardTitle>
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                    </CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{overdueGoals}</div></CardContent>
+                </Card>
+            </div>
+
+            {/* Tabs Filter */}
+            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 space-x-4">
+                    <TabsTrigger value="all" className="rounded-full bg-secondary/50 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 h-8 px-4">
+                        Todas ({totalGoals})
+                    </TabsTrigger>
+                    {categories.map(cat => (
+                        <TabsTrigger key={cat} value={cat} className="rounded-full bg-secondary/50 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 h-8 px-4">
+                            {GOAL_TYPE_CONFIGS[cat as GoalType]?.label || cat} ({goalsList.filter(g => g.type === cat).length})
+                        </TabsTrigger>
+                    ))}
                 </TabsList>
 
-                <TabsContent value="goals" className="space-y-4">
-                    <div className="flex gap-2">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Buscar metas..." className="pl-8" />
-                        </div>
-                        <Button variant="outline" size="icon"><Filter className="h-4 w-4" /></Button>
-                    </div>
+                <TabsContent value={activeTab} className="space-y-4 mt-6">
+                    <div className="grid grid-cols-1 gap-6">
+                        {goalsList
+                            .filter(g => activeTab === 'all' || g.type === activeTab)
+                            .map(goal => {
+                                const progress = calculateProgress(goal);
+                                const isDone = goal.status === 'done';
+                                const typeConfig = GOAL_TYPE_CONFIGS[goal.type] || GOAL_TYPE_CONFIGS['custom'];
 
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {goals?.map(goal => (
-                            <Card key={goal.id}>
-                                <CardHeader className="pb-2">
-                                    <div className="flex justify-between items-start">
-                                        <Badge variant="outline" className="mb-2">{goal.type}</Badge>
-                                        {goal.status === 'done' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-                                    </div>
-                                    <CardTitle className="text-base truncate" title={goal.title}>{goal.title}</CardTitle>
-                                    <CardDescription className="text-xs">{goal.description}</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-xs">
-                                            <span>{goal.current_value} / {goal.target_value} {goal.unit}</span>
-                                            <span>{calculateProgress(goal)}%</span>
+                                return (
+                                    <Card key={goal.id} className={cn("overflow-hidden border-l-4", isDone ? "border-l-green-500 bg-green-50/10" : "border-l-red-100 dark:border-l-red-900/50")}>
+                                        <div className="p-6">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="space-y-1">
+                                                    <h3 className="font-semibold text-lg">{goal.title}</h3>
+                                                    <p className="text-sm text-muted-foreground">{goal.description}</p>
+                                                    <div className="flex gap-2 mt-2">
+                                                        <Badge variant="secondary" className="text-xs bg-secondary/50">{typeConfig.label}</Badge>
+                                                        {goal.due_date && <span className="text-xs text-red-400 flex items-center"><Calendar className="h-3 w-3 mr-1" /> até {new Date(goal.due_date).toLocaleDateString()}</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8"><Edit2 className="h-4 w-4" /></Button>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between text-sm mt-4">
+                                                    <span className="font-semibold">Progresso</span>
+                                                    <span className="text-muted-foreground">{goal.current_value} / {goal.target_value} {goal.unit}</span>
+                                                </div>
+
+                                                <div className="relative pt-1">
+                                                    <Progress value={progress} className="h-3" />
+                                                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                                                        <span>{progress}% concluído</span>
+                                                        <span>Faltam {goal.target_value! - goal.current_value} {goal.unit}</span>
+                                                    </div>
+                                                </div>
+
+                                                {!isDone && (
+                                                    <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg mt-4 space-y-3">
+                                                        <Button
+                                                            className="w-full bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800"
+                                                            variant="outline"
+                                                            onClick={() => handleQuickProgress(goal.id)}
+                                                            disabled={updatingGoalId === goal.id}
+                                                        >
+                                                            {updatingGoalId === goal.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                                                            Marcar progresso hoje
+                                                        </Button>
+                                                        <Input
+                                                            placeholder={typeConfig.placeholder || "Digite o valor..."}
+                                                            className="bg-white dark:bg-black/20"
+                                                            type="number"
+                                                            value={progressInputs[goal.id] || ''}
+                                                            onChange={(e) => setProgressInputs(prev => ({ ...prev, [goal.id]: e.target.value }))}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <Progress value={calculateProgress(goal)} className="h-2" />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                        {goals?.length === 0 && <p className="col-span-full text-center text-muted-foreground py-8">Nenhuma meta encontrada.</p>}
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="habits" className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {habits?.map(habit => (
-                            <Card key={habit.id}>
-                                <CardHeader className="pb-2">
-                                    <div className="flex justify-between items-start">
-                                        <Badge variant="secondary" style={{ backgroundColor: `${habit.color}20`, color: habit.color || 'inherit' }}>{habit.category}</Badge>
-                                    </div>
-                                    <CardTitle className="text-base truncate">{habit.name}</CardTitle>
-                                    <CardDescription className="text-xs">Meta: {habit.target}x / {habit.frequency.type === 'weekly' ? 'semana' : 'dia'}</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <Button variant="outline" size="sm" className="w-full">Check-in</Button>
-                                </CardContent>
-                            </Card>
-                        ))}
-                        {habits?.length === 0 && <p className="col-span-full text-center text-muted-foreground py-8">Nenhum hábito encontrado.</p>}
+                                    </Card>
+                                )
+                            })}
                     </div>
                 </TabsContent>
             </Tabs>
 
-            <CreateGoalDialog open={isCreateGoalOpen} onOpenChange={setIsCreateGoalOpen} />
-            <CreateHabitDialog open={isCreateHabitOpen} onOpenChange={setIsCreateHabitOpen} />
+            <CreateGoalDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
         </div>
     );
 }

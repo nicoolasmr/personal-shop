@@ -1,4 +1,4 @@
-export type GoalType = 'custom' | 'financial' | 'habit' | 'task' | 'reading' | 'weight' | 'exercise' | 'savings' | 'study' | 'health';
+export type GoalType = 'custom' | 'financial' | 'habit' | 'task' | 'reading' | 'weight' | 'exercise' | 'savings' | 'study' | 'health' | 'sleep';
 export type GoalStatus = 'active' | 'done' | 'archived';
 export type ProgressSource = 'app' | 'whatsapp' | 'integration';
 export type TrackingFrequency = 'daily' | 'weekly' | 'monthly';
@@ -16,6 +16,7 @@ export const GOAL_TYPE_CONFIGS: Record<GoalType, GoalTypeConfig> = {
     exercise: { label: 'Exercício', icon: 'Dumbbell', defaultUnit: 'minutos', frequency: 'daily', description: 'Registre minutos de exercício', placeholder: 'Ex: 150', progressLabel: 'Minutos de exercício hoje', color: 'cyan' },
     study: { label: 'Estudo', icon: 'GraduationCap', defaultUnit: 'horas', frequency: 'daily', description: 'Acompanhe horas de estudo', placeholder: 'Ex: 100', progressLabel: 'Horas estudadas hoje', color: 'indigo' },
     health: { label: 'Saúde', icon: 'Heart', defaultUnit: 'dias', frequency: 'daily', description: 'Metas de saúde e bem-estar', placeholder: 'Ex: 30', progressLabel: 'Progresso do dia', color: 'red' },
+    sleep: { label: 'Sono', icon: 'Moon', defaultUnit: 'horas', frequency: 'daily', description: 'Melhore a qualidade do sono', placeholder: 'Ex: 8', progressLabel: 'Horas dormidas', color: 'slate' },
 };
 
 export interface Goal {
