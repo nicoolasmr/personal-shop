@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { TransactionForm } from '@/components/finance/TransactionForm';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
 
 // Metric Card Component
 const MetricCard = ({
@@ -26,24 +27,24 @@ const MetricCard = ({
     colorClass?: string;
     subtitle?: string;
 }) => (
-    <Card>
-        <CardContent className="p-6">
-            <div className="flex items-center gap-4">
+    <Card className="overflow-hidden">
+        <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-3 sm:gap-4">
                 {Icon && (
-                    <div className={cn("h-12 w-12 rounded-lg flex items-center justify-center", colorClass || "bg-gray-100 text-gray-600")}>
-                        <Icon className="h-6 w-6" />
+                    <div className={cn("h-10 w-10 sm:h-12 sm:w-12 rounded-lg flex items-center justify-center shrink-0", colorClass || "bg-secondary text-secondary-foreground")}>
+                        <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 )}
-                <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">{title}</p>
-                    <div className="flex items-center gap-2">
-                        <h3 className={cn("text-2xl font-bold", trend === 'up' ? "text-green-600" : trend === 'down' ? "text-red-600" : "")}>
+                <div className="space-y-0.5 min-w-0">
+                    <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                        <h3 className={cn("text-lg sm:text-2xl font-bold truncate", trend === 'up' ? "text-green-600" : trend === 'down' ? "text-red-600" : "")}>
                             {value}
                         </h3>
-                        {trend === 'up' && <TrendingUp className="h-4 w-4 text-green-600" />}
-                        {trend === 'down' && <TrendingDown className="h-4 w-4 text-red-600" />}
+                        {trend === 'up' && <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 shrink-0" />}
+                        {trend === 'down' && <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 shrink-0" />}
                     </div>
-                    {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+                    {subtitle && <p className="text-[10px] text-muted-foreground truncate">{subtitle}</p>}
                 </div>
             </div>
         </CardContent>
@@ -66,9 +67,18 @@ export default function FinancePage() {
     } = useFinance(year, month);
 
     if (isLoading) {
-        return <div className="p-8 space-y-4">
-            <Skeleton className="h-12 w-1/3" />
-            <div className="grid grid-cols-4 gap-4"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div>
+        return <div className="p-4 sm:p-8 space-y-6">
+            <Skeleton className="h-10 w-48" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Skeleton className="h-32 rounded-xl" />
+                <Skeleton className="h-32 rounded-xl" />
+                <Skeleton className="h-32 rounded-xl" />
+                <Skeleton className="h-32 rounded-xl" />
+            </div>
+            <div className="space-y-4">
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-64 w-full rounded-xl" />
+            </div>
         </div>
     }
 
@@ -90,15 +100,12 @@ export default function FinancePage() {
             </div>
 
             {/* Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <MetricCard
                     title="Saldo Atual"
                     value={formatCurrency(summary.balance)}
                     trend={summary.balance >= 0 ? 'up' : 'down'}
-                // No icon for this one in screenshot, just value? Screenshot has value with trend. 
-                // Let's keep it simple or match distinct style. 
-                // Actually screenshot shows clean "Saldo Atual" left, Value Green big. 
-                // Let's use a simpler card structure for the first one if needed, but MetricCard is flexible.
+                    colorClass="bg-primary/10 text-primary dark:bg-primary/20"
                 />
                 <MetricCard
                     title="Receitas"
@@ -114,7 +121,7 @@ export default function FinancePage() {
                 />
                 <MetricCard
                     title="Parcelas"
-                    value={installmentsSummary.active_count || 0}
+                    value={installmentsSummary.total_active_installments || 0}
                     icon={CreditCard}
                     colorClass="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
                     subtitle="Este mês"
@@ -132,7 +139,7 @@ export default function FinancePage() {
                         <SelectTrigger className="w-full sm:w-[200px]">
                             <SelectValue placeholder="Este mês" />
                         </SelectTrigger>
-                        <SelectContent maxHeight={300}>
+                        <SelectContent>
                             {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                                 <SelectItem key={m} value={`${m}`}>{getMonthName(m)}</SelectItem>
                             ))}
@@ -213,20 +220,22 @@ export default function FinancePage() {
                     ) : (
                         <div className="divide-y relative">
                             {/* Header Row */}
-                            <div className="grid grid-cols-4 p-4 text-xs font-medium text-muted-foreground bg-muted/30">
-                                <div className="col-span-2">Descrição</div>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 p-4 text-xs font-medium text-muted-foreground bg-muted/30">
+                                <div className="col-span-1 sm:col-span-2">Descrição</div>
                                 <div className="text-center">Data</div>
                                 <div className="text-right">Valor</div>
                             </div>
                             {/* List */}
                             {transactionList.map(t => (
-                                <div key={t.id} className="grid grid-cols-4 p-4 text-sm hover:bg-muted/30 transition-colors items-center">
-                                    <div className="col-span-2 font-medium">
-                                        {t.description}
-                                        <div className="text-xs text-muted-foreground font-normal">{t.category || 'Geral'} • {t.payment_method === 'credit_card' ? 'Cartão' : 'Pix'}</div>
+                                <div key={t.id} className="grid grid-cols-3 sm:grid-cols-4 p-4 text-sm hover:bg-muted/30 transition-colors items-center">
+                                    <div className="col-span-1 sm:col-span-2 font-medium">
+                                        <div className="truncate">{t.description}</div>
+                                        <div className="text-[10px] text-muted-foreground font-normal truncate">
+                                            {t.category || 'Geral'} • {t.payment_method === 'credit_card' ? 'Cartão' : 'Pix'}
+                                        </div>
                                     </div>
                                     <div className="text-center text-muted-foreground text-xs">
-                                        {new Date(t.transaction_date).toLocaleDateString()}
+                                        {format(new Date(t.transaction_date), 'dd/MM')}
                                     </div>
                                     <div className={cn("text-right font-medium", t.type === 'income' ? "text-green-600" : "text-red-600")}>
                                         {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}

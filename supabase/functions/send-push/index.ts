@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
@@ -77,6 +78,7 @@ async function sendPushNotification(
 
         const response = await fetch(subscription.endpoint, {
             method: 'POST',
+            // @ts-ignore: Parameter matching
             headers: {
                 'Content-Type': 'application/json',
                 'TTL': '86400',
@@ -97,7 +99,8 @@ async function sendPushNotification(
     }
 }
 
-serve(async (req) => {
+// @ts-ignore: Deno environment
+serve(async (req: any) => {
     if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
     // A.1. FORÇAR IDENTIDADE
@@ -109,10 +112,15 @@ serve(async (req) => {
         });
     }
 
+    // @ts-ignore: Deno environment
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    // @ts-ignore: Deno environment
     const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+    // @ts-ignore: Deno environment
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // @ts-ignore: Deno environment
     const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')!;
+    // @ts-ignore: Deno environment
     const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!;
 
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
@@ -302,7 +310,7 @@ serve(async (req) => {
             return res.success;
         }));
 
-        const successCount = results.filter(v => v).length;
+        const successCount = results.filter((v: any) => v).length;
 
         return new Response(JSON.stringify({
             ok: true,

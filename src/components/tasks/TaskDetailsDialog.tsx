@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { Calendar as CalendarIcon, CheckSquare, Paperclip, Clock, Trash2, Plus, X, Tag, Download, ExternalLink } from 'lucide-react';
 import { TaskWithSubtasks, TaskStatus, TaskPriority, TaskAttachment } from '@/types/tasks';
 import { useUpdateTask, useCreateSubtask, useToggleSubtask, useDeleteSubtask, useUploadAttachment, useDeleteAttachment } from '@/hooks/queries/useTasks';
-import { getAttachmentUrl } from '@/services/tasks';
+import * as tasksService from '@/services/tasks';
 import { cn } from '@/lib/utils';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Separator } from '@/components/ui/Separator';
 
 interface TaskDetailsDialogProps {
     task: TaskWithSubtasks | null;
@@ -107,53 +107,62 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
 
     if (!task) return null;
 
-    const previewUrl = selectedAttachment ? getAttachmentUrl(selectedAttachment.file_path) : null;
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    // Fetch signed URL when attachment is selected
+    useEffect(() => {
+        if (!selectedAttachment) {
+            setPreviewUrl(null);
+            return;
+        }
+
+        // If image, we need signed URL. If not image, we might just need link but signed is safer.
+        let isMounted = true;
+        tasksService.getAttachmentSignedUrl(selectedAttachment.file_path).then(url => {
+            if (isMounted) setPreviewUrl(url);
+        });
+
+        return () => { isMounted = false; };
+    }, [selectedAttachment]);
+
     const isImage = selectedAttachment?.file_type?.startsWith('image/');
 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-                    <div className="p-6 pb-2 border-b">
+                <DialogContent className="sm:max-w-[700px] h-[95vh] sm:h-[90vh] flex flex-col p-0 gap-0 overflow-hidden border-none sm:border">
+                    <div className="p-4 sm:p-6 pb-2 border-b bg-background sticky top-0 z-20">
                         {/* Header Content */}
                         <div className="flex items-start justify-between gap-4">
                             {isEditing ? (
                                 <div className="w-full space-y-4">
                                     <Input
                                         {...form.register('title')}
-                                        className="text-lg font-semibold h-auto py-2"
+                                        className="text-lg font-semibold h-auto py-2 focus-visible:ring-primary"
                                         placeholder="Nome da Tarefa"
                                     />
                                 </div>
                             ) : (
-                                <div className="space-y-1">
-                                    <DialogTitle className="text-xl font-bold break-words">{task.title}</DialogTitle>
+                                <div className="space-y-1 pr-8">
+                                    <DialogTitle className="text-xl font-bold break-words leading-tight">{task.title}</DialogTitle>
                                     <div className="flex flex-wrap gap-2 pt-1 items-center">
-                                        <Select
-                                            defaultValue={task.status}
-                                            onValueChange={(value) => updateTask({ taskId: task.id, payload: { status: value as TaskStatus } })}
-                                        >
-                                            <SelectTrigger className={cn("w-auto h-6 text-[10px] uppercase font-semibold border-none px-2 focus:ring-0 shadow-none gap-1 rounded-full",
-                                                task.status === 'done' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                                            )}>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="todo">A Fazer</SelectItem>
-                                                <SelectItem value="doing">Fazendo</SelectItem>
-                                                <SelectItem value="done">Feito</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <Badge variant="secondary" className={cn("text-[10px] uppercase font-bold",
+                                            task.status === 'done' ? 'bg-green-100 text-green-700' :
+                                                task.status === 'doing' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-slate-100 text-slate-700'
+                                        )}>
+                                            {task.status === 'done' ? 'Concluído' : task.status === 'doing' ? 'Em Andamento' : 'A Fazer'}
+                                        </Badge>
 
                                         <Badge variant="outline" className={cn("text-[10px]",
                                             task.priority === 'high' ? 'text-red-500 border-red-200 bg-red-50' :
                                                 task.priority === 'medium' ? 'text-yellow-600 border-yellow-200 bg-yellow-50' :
                                                     'text-green-600 border-green-200 bg-green-50'
                                         )}>
-                                            {task.priority === 'high' ? 'Alta Prioridade' : task.priority === 'medium' ? 'Média Prioridade' : 'Baixa Prioridade'}
+                                            {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Média' : 'Baixa'}
                                         </Badge>
                                         {task.due_date && (
-                                            <Badge variant="outline" className="text-[10px] flex gap-1 items-center">
+                                            <Badge variant="outline" className="text-[10px] flex gap-1 items-center bg-slate-50">
                                                 <CalendarIcon className="h-3 w-3" />
                                                 {format(new Date(task.due_date), 'dd/MM/yyyy')}
                                             </Badge>
@@ -165,15 +174,15 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
                     </div>
 
                     <Tabs defaultValue="details" className="flex-1 flex flex-col overflow-hidden">
-                        <TabsList className="px-6 border-b justify-start rounded-none bg-background h-12 w-full">
-                            <TabsTrigger value="details" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">Detalhes</TabsTrigger>
-                            <TabsTrigger value="subtasks" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent flex gap-2">
+                        <TabsList className="px-4 sm:px-6 border-b justify-start rounded-none bg-background h-12 w-full overflow-x-auto no-scrollbar">
+                            <TabsTrigger value="details" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4">Detalhes</TabsTrigger>
+                            <TabsTrigger value="subtasks" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 flex gap-2">
                                 Subtarefas
-                                <Badge variant="secondary" className="h-5 px-1 text-[10px]">{task.subtasks.length}</Badge>
+                                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] rounded-full">{task.subtasks.length}</Badge>
                             </TabsTrigger>
-                            <TabsTrigger value="attachments" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent flex gap-2">
+                            <TabsTrigger value="attachments" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 flex gap-2">
                                 Anexos
-                                <Badge variant="secondary" className="h-5 px-1 text-[10px]">{task.attachments?.length || 0}</Badge>
+                                <Badge variant="secondary" className="h-5 px-1.5 text-[10px] rounded-full">{task.attachments?.length || 0}</Badge>
                             </TabsTrigger>
                         </TabsList>
 
@@ -398,18 +407,23 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
                         </div>
                     </Tabs>
 
-                    <div className="p-4 border-t bg-muted/20 flex justify-end gap-2">
-                        {isEditing ? (
-                            <>
-                                <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancelar</Button>
-                                <Button type="submit" form="update-task-form">Salvar Alterações</Button>
-                            </>
-                        ) : (
-                            <>
-                                <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-                                <Button onClick={() => setIsEditing(true)}>Editar Tarefa</Button>
-                            </>
-                        )}
+                    <div className="p-4 border-t bg-background flex items-center justify-between gap-2 mt-auto">
+                        <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                        </Button>
+                        <div className="flex gap-2">
+                            {isEditing ? (
+                                <>
+                                    <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                                    <Button type="submit" form="update-task-form">Salvar</Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
+                                    <Button onClick={() => setIsEditing(true)}>Editar</Button>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

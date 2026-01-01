@@ -3,7 +3,7 @@ export interface Achievement {
     name: string;
     description: string;
     icon: string;
-    category: 'streak' | 'completion' | 'consistency' | 'milestone';
+    category: 'streak' | 'completion' | 'consistency' | 'milestone' | 'finance' | 'task';
     requirement: number;
     color: string;
 }
@@ -46,6 +46,15 @@ export const ACHIEVEMENTS: Achievement[] = [
     { id: 'habits_10', name: 'Ambicioso', description: 'Crie 10 hábitos ativos', icon: 'Target', category: 'milestone', requirement: 10, color: '#2563eb' },
     { id: 'first_habit', name: 'Primeiro Passo', description: 'Crie seu primeiro hábito', icon: 'Rocket', category: 'milestone', requirement: 1, color: '#8b5cf6' },
     { id: 'all_categories', name: 'Vida Equilibrada', description: 'Tenha hábitos em 5 categorias diferentes', icon: 'Sparkles', category: 'milestone', requirement: 5, color: '#a855f7' },
+
+    // Task achievements
+    { id: 'task_1', name: 'Organizado', description: 'Complete sua primeira tarefa', icon: 'CheckSquare', category: 'task', requirement: 1, color: '#06b6d4' },
+    { id: 'task_10', name: 'Produtivo', description: 'Complete 10 tarefas', icon: 'ListChecks', category: 'task', requirement: 10, color: '#0891b2' },
+    { id: 'task_50', name: 'Máquina de Fazer', description: 'Complete 50 tarefas', icon: 'Briefcase', category: 'task', requirement: 50, color: '#0e7490' },
+
+    // Finance achievements
+    { id: 'finance_first', name: 'Poupador Iniciante', description: 'Registe sua primeira transação', icon: 'Wallet', category: 'finance', requirement: 1, color: '#10b981' },
+    { id: 'finance_saver', name: 'Futuro Garantido', description: 'Crie uma meta financeira', icon: 'PiggyBank', category: 'finance', requirement: 1, color: '#059669' },
 ];
 
 export const getAchievementById = (id: string): Achievement | undefined => ACHIEVEMENTS.find((a) => a.id === id);

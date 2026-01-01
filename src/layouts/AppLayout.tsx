@@ -8,18 +8,18 @@ export default function AppLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="flex min-h-screen bg-background text-foreground">
+        <div className="flex h-[100dvh] w-full bg-background text-foreground overflow-hidden">
             <WelcomeTour />
-            {/* Desktop Sidebar */}
-            <Sidebar />
 
-            {/* Mobile Sidebar Overlay */}
+            {/* Sidebar Overlay (Active for all resolutions) */}
             <MobileSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-            <div className="flex flex-1 flex-col">
+            <div className="flex flex-1 flex-col overflow-hidden relative">
                 <Header onMenuClick={() => setSidebarOpen(true)} />
-                <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-                    <Outlet />
+                <main className="flex-1 p-2 md:p-6 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    <div className="w-full h-full flex flex-col">
+                        <Outlet />
+                    </div>
                 </main>
             </div>
         </div>

@@ -6,7 +6,7 @@ import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog';
 import { TaskDetailsDialog } from '@/components/tasks/TaskDetailsDialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, LayoutTemplate, List, CheckSquare, Clock, AlertTriangle, Layers } from 'lucide-react';
+import { Plus, LayoutTemplate, List, Layers } from 'lucide-react';
 import { TaskStatus, TaskWithSubtasks } from '@/types/tasks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,11 @@ export default function TasksPage() {
     const { mutate: moveTask } = useMoveTask();
     const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+    // Updated state for smooth dialog closing
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
     const [filter, setFilter] = useState('all');
 
     const handleTaskMove = (taskId: string, newStatus: TaskStatus, newIndex: number) => {
@@ -30,6 +34,15 @@ export default function TasksPage() {
 
     const handleTaskClick = (task: TaskWithSubtasks) => {
         setSelectedTaskId(task.id);
+        setIsDetailsOpen(true);
+    };
+
+    const onDetailsOpenChange = (open: boolean) => {
+        setIsDetailsOpen(open);
+        if (!open) {
+            // Delay clearing selected task to allow animation to finish
+            setTimeout(() => setSelectedTaskId(null), 300);
+        }
     };
 
     if (error) {
@@ -43,16 +56,17 @@ export default function TasksPage() {
 
     const taskList = tasks || [];
     const totalTasks = taskList.length;
-    const inProgress = taskList.filter(t => t.status === 'in_progress').length;
+    const inProgress = taskList.filter(t => t.status === 'doing').length;
     const completed = taskList.filter(t => t.status === 'done').length;
     const highPriority = taskList.filter(t => t.priority === 'high').length;
 
-    const filteredTasks = filter === 'all' ? taskList : taskList; // Todo: Implement logic if needed, currently UI only
+    const filteredTasks = filter === 'all' ? taskList : taskList; // Todo: Implement logic if needed
 
+    // Keep selectedTask non-null during closing animation if possible, but finding it by null ID returns undefined anyway
     const selectedTask = taskList.find(t => t.id === selectedTaskId) || null;
 
     return (
-        <div className="flex flex-col h-[calc(100vh-6rem)] space-y-6">
+        <div className="flex flex-col flex-1 min-h-0 space-y-4 md:space-y-6">
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">Tarefas</h1>
@@ -78,7 +92,7 @@ export default function TasksPage() {
                             <path d="m21 21-4.3-4.3" />
                         </svg>
                     </div>
-                    <Select defaultValue="all">
+                    <Select defaultValue="all" onValueChange={setFilter}>
                         <SelectTrigger className="w-[120px]">
                             <div className="flex items-center gap-2"><div className="h-4 w-4 opacity-50"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg></div><SelectValue /></div>
                         </SelectTrigger>
@@ -143,32 +157,11 @@ export default function TasksPage() {
                 </div>
             )}
 
-            {/* Bottom Metrics */}
+            {/* Bottom Metrics - Fixed Layout */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-2">
                 <Card>
                     <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400">
-                            <Layers className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <div className="text-xs text-muted-foreground font-medium">Total</div>
-                            <div className="text-xl font-bold">Tarefas</div>
-                            <div className="text-2xl font-bold absolute ml-16 -mt-8">{totalTasks}</div>
-                        </div>
-                        {/* The design in screenshot is a bit specific: Number Large, Label Small below. Let's adjust to be cleaner general metric card */}
-                    </CardContent>
-                </Card>
-                {/* Let's redo the cards to match screenshot strictly: Number on left inside square? No, screenshot 4 shows: 
-                    Left Card: "4 Total Tarefas" (4 is huge number in box).
-                    Wait, looking at image 4 (Tasks):
-                    Card 1: "Total Tarefas" (Label bottom), "4" (Number in grey box left).
-                    Card 2: "Em Progresso" (Label bottom), "1" (Number in blue box left).
-                    Card 3: "Concluídas" (Label bottom), "1" (Number in green box left).
-                    Card 4: "Alta Prioridade" (Label bottom), "2" (Number in red box left).
-                */}
-                <Card>
-                    <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center text-xl font-bold text-gray-700">
+                        <div className="h-12 w-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xl font-bold text-gray-700 dark:text-gray-300">
                             {totalTasks}
                         </div>
                         <div>
@@ -179,7 +172,7 @@ export default function TasksPage() {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center text-xl font-bold text-blue-700">
+                        <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-xl font-bold text-blue-700 dark:text-blue-400">
                             {inProgress}
                         </div>
                         <div>
@@ -190,7 +183,7 @@ export default function TasksPage() {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center text-xl font-bold text-green-700">
+                        <div className="h-12 w-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-xl font-bold text-green-700 dark:text-green-400">
                             {completed}
                         </div>
                         <div>
@@ -201,7 +194,7 @@ export default function TasksPage() {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center text-xl font-bold text-red-700">
+                        <div className="h-12 w-12 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-xl font-bold text-red-700 dark:text-red-400">
                             {highPriority}
                         </div>
                         <div>
@@ -220,8 +213,8 @@ export default function TasksPage() {
 
             <TaskDetailsDialog
                 task={selectedTask}
-                open={!!selectedTask}
-                onOpenChange={(open) => !open && setSelectedTaskId(null)}
+                open={isDetailsOpen}
+                onOpenChange={onDetailsOpenChange}
             />
         </div>
     );

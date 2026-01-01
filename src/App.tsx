@@ -10,6 +10,7 @@ import { NavigationTracker } from "@/components/NavigationTracker";
 import { GlobalLoadingIndicator } from "@/components/GlobalLoadingIndicator";
 import LoadingScreen from "@/components/LoadingScreen";
 import { RuntimeErrorBoundary } from "@/components/RuntimeErrorBoundary";
+import { NotificationManager } from "@/components/NotificationManager";
 
 // Public pages - Lazy loaded
 const Login = lazy(() => import("./pages/auth/Login"));
@@ -49,6 +50,7 @@ const App = () => (
                 <Sonner position="top-right" closeButton richColors />
                 <BrowserRouter>
                     <NavigationTracker />
+                    <NotificationManager />
                     <GlobalLoadingIndicator />
                     <RuntimeErrorBoundary>
                         <Suspense fallback={<LoadingScreen />}>
@@ -78,6 +80,8 @@ const App = () => (
                                     <Route path="calendar" element={<CalendarPage />} />
                                     <Route path="profile" element={<Profile />} />
                                     <Route path="settings" element={<Settings />} />
+                                    <Route path="admin" element={<Admin />} />
+                                    <Route path="whatsapp" element={<Whatsapp />} />
                                 </Route>
 
                                 {/* Ops Console Routes */}

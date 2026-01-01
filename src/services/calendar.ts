@@ -50,8 +50,8 @@ export const calendarService = {
     async createEvent(payload: CreateEventPayload) {
         // org_id will be set by DB trigger
         // user_id will be set by DB default (auth.uid())
-        const { data, error } = await supabase
-            .from('calendar_events')
+        const { data, error } = await (supabase as any)
+            .from('calendar_events' as any)
             .insert({
                 title: payload.title,
                 description: payload.description,
@@ -61,7 +61,7 @@ export const calendarService = {
                 all_day: payload.all_day ?? false,
                 color: payload.color || 'blue',
                 source: payload.source ?? 'manual'
-            })
+            } as any)
             .select()
             .single();
 
@@ -81,9 +81,9 @@ export const calendarService = {
         if (payload.start_at) updateData.start_at = payload.start_at.toISOString();
         if (payload.end_at) updateData.end_at = payload.end_at.toISOString();
 
-        const { data, error } = await supabase
-            .from('calendar_events')
-            .update(updateData)
+        const { data, error } = await (supabase as any)
+            .from('calendar_events' as any)
+            .update(updateData as any)
             .eq('id', id)
             .select()
             .single();
@@ -96,8 +96,8 @@ export const calendarService = {
      * Delete an event.
      */
     async deleteEvent(id: string) {
-        const { error } = await supabase
-            .from('calendar_events')
+        const { error } = await (supabase as any)
+            .from('calendar_events' as any)
             .delete()
             .eq('id', id);
 

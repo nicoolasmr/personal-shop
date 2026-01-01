@@ -19,6 +19,7 @@ export default function GoalsPage() {
     const { data: goals, isLoading } = useGoals();
     const { mutate: addProgress } = useAddProgress();
     const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+    const [goalToEdit, setGoalToEdit] = useState<Goal | null>(null);
 
     // Filter state
     const [activeTab, setActiveTab] = useState('all');
@@ -42,12 +43,18 @@ export default function GoalsPage() {
         if (isNaN(value) || value <= 0) return;
 
         setUpdatingGoalId(goalId);
-        addProgress({ goalId, payload: { delta_value: value, note: 'Progresso rápido via card' } }, {
+        addProgress({ goalId, payload: { delta_value: value, notes: 'Progresso rápido via card' } }, {
             onSuccess: () => {
                 setProgressInputs(prev => ({ ...prev, [goalId]: '' }));
             },
             onSettled: () => setUpdatingGoalId(null)
         });
+    };
+
+    const handleEdit = (goal: Goal) => {
+        setGoalToEdit(goal);
+        setIsCreateOpen(true);
+        setSelectedGoal(null);
     };
 
     const categories = Array.from(new Set(goalsList.map(g => g.type)));
@@ -59,7 +66,7 @@ export default function GoalsPage() {
                     <h1 className="text-2xl font-bold">Metas</h1>
                     <p className="text-muted-foreground">Defina e acompanhe seus objetivos</p>
                 </div>
-                <Button onClick={() => setIsCreateOpen(true)}><Plus className="h-4 w-4 mr-2" /> Nova Meta</Button>
+                <Button onClick={() => { setGoalToEdit(null); setIsCreateOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Nova Meta</Button>
             </div>
 
             {/* Metrics */}
@@ -133,7 +140,7 @@ export default function GoalsPage() {
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelectedGoal(goal); }}><Edit2 className="h-4 w-4" /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleEdit(goal); }}><Edit2 className="h-4 w-4" /></Button>
                                                 </div>
                                             </div>
 
@@ -186,11 +193,19 @@ export default function GoalsPage() {
                 </TabsContent>
             </Tabs>
 
-            <CreateGoalDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
+            <CreateGoalDialog
+                open={isCreateOpen}
+                onOpenChange={(open) => {
+                    setIsCreateOpen(open);
+                    if (!open) setGoalToEdit(null);
+                }}
+                goalToEdit={goalToEdit}
+            />
             <GoalDetailsDialog
                 goal={selectedGoal}
                 open={!!selectedGoal}
                 onOpenChange={(open) => !open && setSelectedGoal(null)}
+                onEdit={handleEdit}
             />
         </div>
     );

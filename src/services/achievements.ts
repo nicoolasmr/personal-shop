@@ -49,29 +49,80 @@ export interface AchievementProgress {
     perfectWeeks: number;
     monthlyGoalsReached: number;
     weeklyRate: number;
+    tasksCompleted: number;
+    financeTransactions: number;
+    financeGoals: number;
 }
 
-export function calculateAchievementProgress(habits: HabitWithCheckins[]): AchievementProgress {
+export interface ExternalAchievementStats {
+    tasksCompleted?: number;
+    financeTransactions?: number;
+    financeGoals?: number;
+}
+
+export function calculateAchievementProgress(habits: HabitWithCheckins[], externalStats?: ExternalAchievementStats): AchievementProgress {
     const streakBest = Math.max(...habits.map(h => calculateStreak(h.checkins)), 0);
     const totalCheckins = habits.reduce((acc, h) => acc + h.checkins.filter(c => c.completed).length, 0);
     const activeHabits = habits.filter(h => h.active).length;
     const uniqueCategories = new Set(habits.map(h => h.category).filter(Boolean)).size;
-    // ... calculate perfectWeeks, weeklyRate
-    return { streakBest, totalCheckins, activeHabits, uniqueCategories, perfectWeeks: 0, monthlyGoalsReached: 0, weeklyRate: 0 };
+
+    return {
+        streakBest,
+        totalCheckins,
+        activeHabits,
+        uniqueCategories,
+        perfectWeeks: 0,
+        monthlyGoalsReached: 0,
+        weeklyRate: 0,
+        tasksCompleted: externalStats?.tasksCompleted || 0,
+        financeTransactions: externalStats?.financeTransactions || 0,
+        financeGoals: externalStats?.financeGoals || 0
+    };
 }
 
 export function getAchievementsWithStatus(userAchievements: UserAchievement[], progress: AchievementProgress): AchievementWithStatus[] {
     const unlockedMap = new Map(userAchievements.map(ua => [ua.achievement_id, ua.unlocked_at]));
     return ACHIEVEMENTS.map(achievement => {
         const unlocked = unlockedMap.has(achievement.id);
-        const currentProgress = 0;
-        // Calculate progress based on achievement.id (streak_3, checkins_50, etc.)
-        return { ...achievement, unlocked, unlockedAt: unlockedMap.get(achievement.id), progress: Math.round(currentProgress) };
+        let currentProgress = 0;
+
+        switch (achievement.category) {
+            case 'streak':
+                currentProgress = (progress.streakBest / achievement.requirement) * 100;
+                break;
+            case 'completion':
+                currentProgress = (progress.totalCheckins / achievement.requirement) * 100;
+                break;
+            case 'milestone':
+                // Logic based on specific IDs if needed, generic for now
+                if (achievement.id.startsWith('habits_')) currentProgress = (progress.activeHabits / achievement.requirement) * 100;
+                else if (achievement.id === 'all_categories') currentProgress = (progress.uniqueCategories / achievement.requirement) * 100;
+                else if (achievement.id === 'first_habit') currentProgress = (progress.activeHabits >= 1 ? 100 : 0);
+                break;
+            case 'consistency':
+                // Placeholder logic
+                currentProgress = 0;
+                break;
+            case 'task':
+                currentProgress = (progress.tasksCompleted / achievement.requirement) * 100;
+                break;
+            case 'finance':
+                if (achievement.id === 'finance_first') currentProgress = (progress.financeTransactions >= 1 ? 100 : 0);
+                else if (achievement.id === 'finance_saver') currentProgress = (progress.financeGoals >= 1 ? 100 : 0);
+                break;
+        }
+
+        return {
+            ...achievement,
+            unlocked,
+            unlockedAt: unlockedMap.get(achievement.id),
+            progress: Math.min(Math.round(currentProgress), 100)
+        };
     });
 }
 
-export async function checkAndUnlockAchievements(userId: string, habits: HabitWithCheckins[], existingAchievements: UserAchievement[]): Promise<string[]> {
-    const progress = calculateAchievementProgress(habits);
+export async function checkAndUnlockAchievements(userId: string, habits: HabitWithCheckins[], existingAchievements: UserAchievement[], externalStats?: ExternalAchievementStats): Promise<string[]> {
+    const progress = calculateAchievementProgress(habits, externalStats);
     const achievementsWithStatus = getAchievementsWithStatus(existingAchievements, progress);
     const newlyUnlocked: string[] = [];
 

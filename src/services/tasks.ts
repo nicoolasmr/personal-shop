@@ -192,7 +192,7 @@ export async function moveTask(orgId: string, userId: string, taskId: string, pa
         }
     }
 
-    await db.from('tasks').update({ sort_order: newSortOrder }).eq('id', taskId);
+    await (db as any).from('tasks').update({ sort_order: newSortOrder }).eq('id', taskId);
 }
 
 export async function getMaxSortOrder(orgId: string, status: string): Promise<number> {
@@ -243,7 +243,7 @@ export async function createTask(orgId: string, userId: string, payload: CreateT
 
     const sortOrder = (maxOrder?.sort_order ?? 0) + GAP_SIZE;
 
-    const { data, error } = await db
+    const { data, error } = await (db as any)
         .from('tasks')
         .insert({
             org_id: orgId,
@@ -332,6 +332,12 @@ export async function uploadAttachment(orgId: string, userId: string, taskId: st
 
 export function getAttachmentUrl(filePath: string): string {
     return db.storage.from('task-attachments').getPublicUrl(filePath).data.publicUrl;
+}
+
+export async function getAttachmentSignedUrl(filePath: string): Promise<string | null> {
+    const { data, error } = await db.storage.from('task-attachments').createSignedUrl(filePath, 3600); // 1 hour
+    if (error) return null;
+    return data.signedUrl;
 }
 
 // =============================================================================

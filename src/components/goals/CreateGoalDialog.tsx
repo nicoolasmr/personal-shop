@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useCreateGoal } from '@/hooks/useGoals';
+import { useCreateGoal, useUpdateGoal } from '@/hooks/useGoals';
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -12,14 +12,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { GOAL_TYPE_CONFIGS, GoalType } from '@/types/goals'; // Use the shared config
+import { GOAL_TYPE_CONFIGS, GoalType, Goal } from '@/types/goals';
 
 const createGoalSchema = z.object({
     title: z.string().min(1, 'Título é obrigatório'),
     description: z.string().optional(),
-    type: z.string(), // Relaxed to allow dynamic types from config, validation still works if we passed enum but string is safer with dynamic keys
+    type: z.string(),
     target_value: z.coerce.number().min(1, 'Valor alvo deve ser maior que 0'),
-    start_date: z.string().min(1, 'Data de início é obrigatória'),
     deadline: z.string().min(1, 'Data limite é obrigatória'),
     unit: z.string().min(1, 'Unidade é obrigatória'),
 });
@@ -29,27 +28,53 @@ type CreateGoalFormValues = z.infer<typeof createGoalSchema>;
 interface CreateGoalDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    goalToEdit?: Goal | null;
 }
 
-export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) {
-    const { mutate: createGoal, isPending } = useCreateGoal();
+export function CreateGoalDialog({ open, onOpenChange, goalToEdit }: CreateGoalDialogProps) {
+    const { mutate: createGoal, isPending: isCreating } = useCreateGoal();
+    const { mutate: updateGoal, isPending: isUpdating } = useUpdateGoal();
+    const isPending = isCreating || isUpdating;
 
     const form = useForm<CreateGoalFormValues>({
         resolver: zodResolver(createGoalSchema),
         defaultValues: {
             title: '',
             description: '',
-            type: 'custom', // Default
+            type: 'custom',
             target_value: 0,
             unit: 'un',
-            start_date: new Date().toISOString().split('T')[0],
             deadline: '',
         },
     });
 
+    // Effect to populate form when goalToEdit changes
+    useEffect(() => {
+        if (open) {
+            if (goalToEdit) {
+                form.reset({
+                    title: goalToEdit.title,
+                    description: goalToEdit.description || '',
+                    type: goalToEdit.type,
+                    target_value: goalToEdit.target_value || 0,
+                    unit: goalToEdit.unit || 'un',
+                    deadline: goalToEdit.due_date ? new Date(goalToEdit.due_date).toISOString().split('T')[0] : '',
+                });
+            } else {
+                form.reset({
+                    title: '',
+                    description: '',
+                    type: 'custom',
+                    target_value: 0,
+                    unit: 'un',
+                    deadline: '',
+                });
+            }
+        }
+    }, [goalToEdit, open, form]);
+
     const selectedType = useWatch({ control: form.control, name: 'type' }) as GoalType;
 
-    // Auto-update unit based on type
     const handleTypeChange = (value: string) => {
         form.setValue('type', value);
         const config = GOAL_TYPE_CONFIGS[value as GoalType];
@@ -59,25 +84,45 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
     };
 
     const onSubmit = (data: CreateGoalFormValues) => {
-        createGoal({
-            ...data,
-            type: data.type as GoalType,
-            current_value: 0,
-        }, {
-            onSuccess: () => {
-                form.reset();
-                onOpenChange(false);
-            }
-        });
+        if (goalToEdit) {
+            updateGoal({
+                goalId: goalToEdit.id,
+                payload: {
+                    title: data.title,
+                    description: data.description,
+                    target_value: data.target_value,
+                    unit: data.unit,
+                    due_date: data.deadline,
+                }
+            }, {
+                onSuccess: () => {
+                    onOpenChange(false);
+                }
+            });
+        } else {
+            createGoal({
+                title: data.title,
+                description: data.description,
+                target_value: data.target_value,
+                unit: data.unit,
+                type: data.type as GoalType,
+                due_date: data.deadline
+            }, {
+                onSuccess: () => {
+                    form.reset();
+                    onOpenChange(false);
+                }
+            });
+        }
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>Nova Meta</DialogTitle>
+                    <DialogTitle>{goalToEdit ? 'Editar Meta' : 'Nova Meta'}</DialogTitle>
                     <DialogDescription>
-                        Defina um objetivo claro e mensurável.
+                        {goalToEdit ? 'Atualize os detalhes da sua meta.' : 'Defina um objetivo claro e mensurável.'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -101,10 +146,9 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Categoria</FormLabel>
-                                    <Select onValueChange={handleTypeChange} defaultValue={field.value}>
+                                    <Select onValueChange={handleTypeChange} defaultValue={field.value} disabled={!!goalToEdit}>
                                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                                         <SelectContent position="popper" className="max-h-[200px]">
-                                            {/* Render simplified list or full list from config */}
                                             <SelectItem value="custom">Personalizada</SelectItem>
                                             <SelectItem value="financial">Financeira</SelectItem>
                                             <SelectItem value="health">Saúde</SelectItem>
@@ -117,12 +161,13 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
                                             <SelectItem value="habit">Hábito</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                    {goalToEdit && <p className="text-xs text-muted-foreground mt-1">A categoria não pode ser alterada.</p>}
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
-                        {selectedType === 'financial' && (
+                        {selectedType === 'financial' && !goalToEdit && (
                             <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-md text-sm text-blue-600 dark:text-blue-400 mb-2">
                                 Metas financeiras podem ser vinculadas ao seu painel de Finanças para atualização automática.
                             </div>
@@ -153,18 +198,7 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="start_date"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Início</FormLabel>
-                                        <FormControl><Input type="date" {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                        <div className="grid grid-cols-1 gap-4">
                             <FormField
                                 control={form.control}
                                 name="deadline"

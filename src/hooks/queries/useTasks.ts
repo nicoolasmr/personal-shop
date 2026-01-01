@@ -118,14 +118,55 @@ export function useMoveTask() {
 
 // Subtasks
 export function useCreateSubtask() {
-    const { org } = useTenant(); const { user } = useAuth(); const queryClient = useQueryClient();
+    const { org } = useTenant();
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
+
     return useMutation({
         mutationFn: ({ taskId, title }: { taskId: string; title: string }) => {
             if (!org?.id || !user?.id) throw new Error('Missing org or user');
             return tasksService.createSubtask(org.id, user.id, taskId, title);
         },
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: [TASKS_KEY] }); },
-        onError: (error) => { console.error('Create subtask error:', error); toast({ title: 'Erro ao criar subtarefa', variant: 'destructive' }); },
+        onMutate: async ({ taskId, title }) => {
+            await queryClient.cancelQueries({ queryKey: [TASKS_KEY, org?.id] });
+            const previousTasks = queryClient.getQueryData<TaskWithSubtasks[]>([TASKS_KEY, org?.id]);
+
+            queryClient.setQueryData([TASKS_KEY, org?.id], (old: TaskWithSubtasks[] | undefined) => {
+                if (!old) return [];
+                return old.map(task => {
+                    if (task.id === taskId) {
+                        return {
+                            ...task,
+                            subtasks: [
+                                ...task.subtasks,
+                                {
+                                    id: `temp-${Date.now()}`,
+                                    task_id: taskId,
+                                    title,
+                                    done: false,
+                                    created_at: new Date().toISOString(),
+                                    org_id: org?.id || '',
+                                    user_id: user?.id || ''
+                                }
+                            ]
+                        };
+                    }
+                    return task;
+                });
+            });
+
+            return { previousTasks };
+        },
+        onError: (err, newTodo, context) => {
+            if (context?.previousTasks) {
+                queryClient.setQueryData([TASKS_KEY, org?.id], context.previousTasks);
+            }
+            console.error('Create subtask error:', err);
+            toast({ title: 'Erro ao criar subtarefa', variant: 'destructive' });
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: [TASKS_KEY] });
+        },
     });
 }
 

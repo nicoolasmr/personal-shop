@@ -8,15 +8,23 @@ import { AlertCircle, CheckCircle2, Target, TrendingUp } from 'lucide-react';
 
 const COLORS = ['#22c55e', '#3b82f6', '#94a3b8', '#FF8042', '#8884d8'];
 
-export function GoalStats() {
-    const { data: activeGoals } = useGoals('active');
-    const { data: doneGoals } = useGoals('done');
-    const { data: archivedGoals } = useGoals('archived');
+import { GoalWithProgress } from '@/types/goals';
+import { FinanceGoal } from '@/types/finance';
+
+interface GoalStatsProps {
+    goals?: GoalWithProgress[];
+    financeGoals?: FinanceGoal[];
+}
+
+export function GoalStats({ goals: providedGoals, financeGoals }: GoalStatsProps = {}) {
+    const { data: activeGoalsFetched } = useGoals('active');
+    const { data: doneGoalsFetched } = useGoals('done');
+    const { data: archivedGoalsFetched } = useGoals('archived');
 
     const stats = useMemo(() => {
-        const active = activeGoals || [];
-        const done = doneGoals || [];
-        const archived = archivedGoals || [];
+        const active = providedGoals ? providedGoals.filter(g => g.status === 'active') : (activeGoalsFetched || []);
+        const done = providedGoals ? providedGoals.filter(g => g.status === 'done') : (doneGoalsFetched || []);
+        const archived = archivedGoalsFetched || [];
         const all = [...active, ...done, ...archived];
 
         const totalActive = active.length;
@@ -48,7 +56,7 @@ export function GoalStats() {
         ].filter(d => d.value > 0);
 
         return { totalActive, totalDone, overdue, successRate, avgProgress, byType, statusData };
-    }, [activeGoals, doneGoals, archivedGoals]);
+    }, [activeGoalsFetched, doneGoalsFetched, archivedGoalsFetched, providedGoals]);
 
     return (
         <div className="space-y-6 animate-in fade-in-50">

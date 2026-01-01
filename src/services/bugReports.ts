@@ -69,7 +69,7 @@ export async function createBugReport(
 ): Promise<BugReport> {
     const diagnostics = collectDiagnostics();
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
         .from('bug_reports')
         .insert({
             org_id: orgId,
@@ -82,7 +82,7 @@ export async function createBugReport(
                 ...diagnostics,
                 ...payload.metadata,
             },
-        })
+        } as any)
         .select()
         .single();
 
@@ -101,9 +101,9 @@ export async function updateBugReportStatus(
     reportId: string,
     status: BugReport['status']
 ): Promise<void> {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
         .from('bug_reports')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({ status, updated_at: new Date().toISOString() } as any)
         .eq('id', reportId);
 
     if (error) {
