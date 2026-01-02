@@ -134,13 +134,9 @@ export default function HabitsPage() {
                                 const weekly = getWeeklyStatus(habit);
                                 const isDone = isDoneToday(habit);
 
-                                // Calculate real progress (this month)
-                                const today = new Date();
-                                const currentMonthCheckins = habit.checkins?.filter(c =>
-                                    isSameMonth(new Date(c.checkin_date), today) && c.completed
-                                ).length || 0;
-                                const daysInMonth = today.getDate(); // Days passed this month
-                                const progress = daysInMonth > 0 ? Math.min(Math.round((currentMonthCheckins / daysInMonth) * 100), 100) : 0;
+                                // Calculate real weekly progress (completed days this week / 7)
+                                const completedThisWeek = weekly.filter(day => day.isDone).length;
+                                const progress = Math.min(Math.round((completedThisWeek / 7) * 100), 100);
 
                                 // Calculate current streak
                                 const calculateStreak = () => {
