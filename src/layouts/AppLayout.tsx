@@ -11,8 +11,13 @@ export default function AppLayout() {
         <div className="flex h-[100dvh] w-full bg-background text-foreground overflow-hidden">
             <WelcomeTour />
 
-            {/* Sidebar Overlay (Active for all resolutions) */}
+            {/* Mobile Sidebar Overlay (Only active on small screens or when toggled) */}
             <MobileSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+            {/* Desktop Sidebar (Always visible on large screens) */}
+            <div className="hidden lg:flex flex-col h-full z-20">
+                <Sidebar className="h-full border-r" />
+            </div>
 
             <div className="flex flex-1 flex-col overflow-hidden relative">
                 <Header onMenuClick={() => setSidebarOpen(true)} />

@@ -36,6 +36,7 @@ export async function fetchTransactions(orgId: string, year?: number, month?: nu
 export async function createTransaction(orgId: string, userId: string, payload: CreateTransactionPayload): Promise<Transaction> {
     const installmentCount = payload.installment_count || 1;
     const parcelAmount = installmentCount > 1 ? Math.round((payload.amount / installmentCount) * 100) / 100 : payload.amount;
+    const dateStr = payload.transaction_date || new Date().toISOString().split('T')[0];
 
     const { data: result, error } = await (supabase as any).from('transactions').insert({
         org_id: orgId,
@@ -43,7 +44,8 @@ export async function createTransaction(orgId: string, userId: string, payload: 
         type: payload.type,
         amount: parcelAmount,
         description: payload.description,
-        transaction_date: payload.transaction_date || new Date().toISOString().split('T')[0],
+        transaction_date: dateStr,
+        date: dateStr, // Include this as fallback for potential schema mismatch reported by user
         payment_method: payload.payment_method || 'other',
         installment_count: installmentCount,
         installment_number: 1,
@@ -83,6 +85,7 @@ export async function bulkCreateTransactions(orgId: string, userId: string, payl
         amount: p.amount,
         description: p.description,
         transaction_date: p.transaction_date,
+        date: p.transaction_date, // Fallback
         payment_method: p.payment_method || 'other'
     }));
     const { error, count } = await (supabase as any).from('transactions').insert(rows);
@@ -94,27 +97,29 @@ export async function bulkCreateTransactions(orgId: string, userId: string, payl
 // Categories
 // =============================================================================
 
-export async function fetchCategories(orgId: string): Promise<TransactionCategory[]> {
+export async function fetchCategories(orgId: string, userId?: string): Promise<TransactionCategory[]> {
     const { data, error } = await supabase.from('transaction_categories').select('*').eq('org_id', orgId).order('name');
 
     if (error) throw error;
 
-    if (!data || data.length === 0) {
-        // Seeding default categories if none exist
+    if ((!data || data.length === 0) && userId) {
+        // Seeding default categories automatically if none exist and userId provided
         const defaults = [
-            ...DEFAULT_EXPENSE_CATEGORIES.map(c => ({ ...c, type: 'expense' })),
-            ...DEFAULT_INCOME_CATEGORIES.map(c => ({ ...c, type: 'income' }))
+            ...DEFAULT_EXPENSE_CATEGORIES.map(c => ({ org_id: orgId, user_id: userId, name: c.name, icon: c.icon, color: c.color, type: 'expense', is_default: true })),
+            ...DEFAULT_INCOME_CATEGORIES.map(c => ({ org_id: orgId, user_id: userId, name: c.name, icon: c.icon, color: c.color, type: 'income', is_default: true }))
         ];
 
-        // We need user_id to insert. But fetchCategories only takes orgId.
-        // This is a limitation. I will skip auto-seeding here for now to avoid complexity or hack it if I can pass userId.
-        // Actually, let's just make sure the UI handles empty state or the user has a way to create one.
-        // But the user reported it's "broken/empty", so likely just need to seed.
+        const { data: seeded, error: seedError } = await (supabase as any).from('transaction_categories').insert(defaults).select();
 
+        if (!seedError && seeded) {
+            return seeded as TransactionCategory[];
+        }
+        // Fallback or error log
+        console.error('Failed to seed categories:', seedError);
         return [];
     }
 
-    return data;
+    return data || [];
 }
 
 // In createCategory

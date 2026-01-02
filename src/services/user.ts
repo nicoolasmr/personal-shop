@@ -6,15 +6,26 @@ type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 export interface UpdateProfileData {
     full_name: string;
     avatar_url?: string | null;
+    age?: number | null;
+    profession?: string | null;
+    routine?: string | null;
+    description?: string | null; // routine alias if needed, sticking to migration 'routine'
+    phone?: string | null;
+    language?: string;
 }
 
 export async function updateProfile(userId: string, data: UpdateProfileData): Promise<{ success: boolean; error?: string }> {
     if (!supabaseConfigured) return { success: false, error: 'Supabase não configurado' };
 
-    const updateData: ProfileUpdate = { full_name: data.full_name.trim() };
+    const updateData: any = { full_name: data.full_name.trim() };
     if (data.avatar_url !== undefined) updateData.avatar_url = data.avatar_url;
+    if (data.age !== undefined) updateData.age = data.age;
+    if (data.profession !== undefined) updateData.profession = data.profession;
+    if (data.routine !== undefined) updateData.routine = data.routine;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.language !== undefined) updateData.language = data.language;
 
-    const { error } = await supabase.from('profiles').update(updateData).eq('user_id', userId);
+    const { error } = await supabase.from('profiles').update(updateData as any).eq('user_id', userId);
     if (error) return { success: false, error: error.message };
     return { success: true };
 }

@@ -29,7 +29,7 @@ export function useFinance(year?: number, month?: number) {
 
     const { data: categories = [], isLoading: categoriesLoading } = useQuery({
         queryKey: ['transaction-categories', orgId],
-        queryFn: () => { if (!orgId) return []; return fetchCategories(orgId!); },
+        queryFn: () => { if (!orgId) return []; return fetchCategories(orgId!, user?.id); },
         enabled: !!orgId,
     });
 

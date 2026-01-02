@@ -14,7 +14,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="hover:bg-accent/50 transition-colors shrink-0"
+                    className="hover:bg-accent/50 transition-colors shrink-0 lg:hidden"
                     onClick={onMenuClick}
                     title="Menu"
                 >

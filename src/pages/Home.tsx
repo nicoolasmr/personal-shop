@@ -11,6 +11,7 @@ import { useTasks } from '@/hooks/queries/useTasks';
 import { useGoals } from '@/hooks/useGoals';
 import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog';
 import { CreateEventDialog } from '@/components/calendar/CreateEventDialog';
+import { EventDetailsDialog } from '@/components/calendar/EventDetailsDialog';
 import { CreateHabitDialog } from '@/components/goals/CreateHabitDialog';
 import { TransactionForm } from '@/components/finance/TransactionForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -34,6 +35,8 @@ export default function Home() {
     const [isHabitOpen, setIsHabitOpen] = useState(false);
     const [isExpenseOpen, setIsExpenseOpen] = useState(false);
     const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
+    const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const [isEventDetailsOpen, setIsEventDetailsOpen] = useState(false);
 
     // Data Hooks
     const today = new Date();
@@ -187,8 +190,8 @@ export default function Home() {
                                         key={evt.id}
                                         className="flex items-start gap-3 p-2 rounded-lg bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors"
                                         onClick={() => {
-                                            setEditEvent(evt);
-                                            setIsEventOpen(true);
+                                            setSelectedEvent(evt);
+                                            setIsEventDetailsOpen(true);
                                         }}
                                     >
                                         <div className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">
@@ -299,6 +302,16 @@ export default function Home() {
                     if (!v) setEditEvent(null);
                 }}
                 eventToEdit={editEvent}
+            />
+            <EventDetailsDialog
+                open={isEventDetailsOpen}
+                onOpenChange={setIsEventDetailsOpen}
+                event={selectedEvent}
+                onEdit={(evt) => {
+                    setIsEventDetailsOpen(false);
+                    setEditEvent(evt);
+                    setIsEventOpen(true);
+                }}
             />
             <CreateHabitDialog open={isHabitOpen} onOpenChange={setIsHabitOpen} />
 

@@ -28,7 +28,7 @@ export async function unlockAchievement(userId: string, achievementId: string): 
 
     const { error } = await supabase
         .from('user_achievements')
-        .insert({ user_id: userId, achievement_id: achievementId })
+        .insert({ user_id: userId, achievement_id: achievementId } as any)
         .select()
         .single();
 
@@ -86,37 +86,55 @@ export function getAchievementsWithStatus(userAchievements: UserAchievement[], p
         const unlocked = unlockedMap.has(achievement.id);
         let currentProgress = 0;
 
-        switch (achievement.category) {
-            case 'streak':
-                currentProgress = (progress.streakBest / achievement.requirement) * 100;
-                break;
-            case 'completion':
-                currentProgress = (progress.totalCheckins / achievement.requirement) * 100;
-                break;
-            case 'milestone':
-                // Logic based on specific IDs if needed, generic for now
-                if (achievement.id.startsWith('habits_')) currentProgress = (progress.activeHabits / achievement.requirement) * 100;
-                else if (achievement.id === 'all_categories') currentProgress = (progress.uniqueCategories / achievement.requirement) * 100;
-                else if (achievement.id === 'first_habit') currentProgress = (progress.activeHabits >= 1 ? 100 : 0);
-                break;
-            case 'consistency':
-                // Placeholder logic
-                currentProgress = 0;
-                break;
-            case 'task':
-                currentProgress = (progress.tasksCompleted / achievement.requirement) * 100;
-                break;
-            case 'finance':
-                if (achievement.id === 'finance_first') currentProgress = (progress.financeTransactions >= 1 ? 100 : 0);
-                else if (achievement.id === 'finance_saver') currentProgress = (progress.financeGoals >= 1 ? 100 : 0);
-                break;
+        // If already unlocked, show 100%
+        if (unlocked) {
+            currentProgress = 100;
+        } else {
+            // Safe division helper
+            const safeProgress = (current: number, required: number): number => {
+                if (required <= 0) return 0;
+                return Math.min((current / required) * 100, 100);
+            };
+
+            switch (achievement.category) {
+                case 'streak':
+                    currentProgress = safeProgress(progress.streakBest, achievement.requirement);
+                    break;
+                case 'completion':
+                    currentProgress = safeProgress(progress.totalCheckins, achievement.requirement);
+                    break;
+                case 'milestone':
+                    // Logic based on specific IDs if needed, generic for now
+                    if (achievement.id.startsWith('habits_')) {
+                        currentProgress = safeProgress(progress.activeHabits, achievement.requirement);
+                    } else if (achievement.id === 'all_categories') {
+                        currentProgress = safeProgress(progress.uniqueCategories, achievement.requirement);
+                    } else if (achievement.id === 'first_habit') {
+                        currentProgress = progress.activeHabits >= 1 ? 100 : 0;
+                    }
+                    break;
+                case 'consistency':
+                    // Placeholder logic - needs proper implementation
+                    currentProgress = 0;
+                    break;
+                case 'task':
+                    currentProgress = safeProgress(progress.tasksCompleted, achievement.requirement);
+                    break;
+                case 'finance':
+                    if (achievement.id === 'finance_first') {
+                        currentProgress = progress.financeTransactions >= 1 ? 100 : 0;
+                    } else if (achievement.id === 'finance_saver') {
+                        currentProgress = progress.financeGoals >= 1 ? 100 : 0;
+                    }
+                    break;
+            }
         }
 
         return {
             ...achievement,
             unlocked,
             unlockedAt: unlockedMap.get(achievement.id),
-            progress: Math.min(Math.round(currentProgress), 100)
+            progress: Math.max(0, Math.min(Math.round(currentProgress), 100))
         };
     });
 }

@@ -26,12 +26,12 @@ const Statistics = lazy(() => import("./pages/statistics/StatisticsPage"));
 const Finance = lazy(() => import("./pages/finance/FinancePage"));
 const CalendarPage = lazy(() => import("./pages/calendar/CalendarPage"));
 const Profile = lazy(() => import("./pages/profile/ProfilePage"));
-const Settings = lazy(() => import("./pages/settings/SettingsPage"));
 const Admin = lazy(() => import("./pages/admin/AdminPage"));
 const Whatsapp = lazy(() => import("./pages/whatsapp/WhatsappPage"));
 
 // Ops Console Imports - Lazy loaded
 const OpsGuard = lazy(() => import("./guards/OpsGuard"));
+const AdminGuard = lazy(() => import("./guards/AdminGuard"));
 const OpsLayout = lazy(() => import("./pages/ops/OpsLayout"));
 const OpsHome = lazy(() => import("./pages/ops/OpsHome"));
 const OpsUsers = lazy(() => import("./pages/ops/OpsUsers"));
@@ -79,8 +79,12 @@ const App = () => (
                                     <Route path="finance" element={<Finance />} />
                                     <Route path="calendar" element={<CalendarPage />} />
                                     <Route path="profile" element={<Profile />} />
-                                    <Route path="settings" element={<Settings />} />
-                                    <Route path="admin" element={<Admin />} />
+
+                                    {/* Admin route - Protected */}
+                                    <Route element={<AdminGuard />}>
+                                        <Route path="admin" element={<Admin />} />
+                                    </Route>
+
                                     <Route path="whatsapp" element={<Whatsapp />} />
                                 </Route>
 

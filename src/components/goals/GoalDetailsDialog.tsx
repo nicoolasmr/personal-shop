@@ -6,7 +6,7 @@ import { Goal, calculateProgress, isGoalOverdue, GOAL_TYPE_CONFIGS, GOAL_STATUS_
 import { Edit, Trash2, Calendar, Target, CheckCircle2, XCircle, Loader2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useDeleteGoal, useAddProgress } from '@/hooks/useGoals';
+import { useDeleteGoal, useAddProgress, useGoal } from '@/hooks/useGoals';
 import { useState } from 'react';
 
 interface GoalDetailsDialogProps {
@@ -20,20 +20,24 @@ export function GoalDetailsDialog({ goal, open, onOpenChange, onEdit }: GoalDeta
     const { mutate: deleteGoal, isPending: isDeleting } = useDeleteGoal();
     const { mutate: addProgress, isPending: isUpdating } = useAddProgress();
 
+    // Fetch fresh goal data to reflect updates
+    const { data: freshGoal } = useGoal(goal?.id || '');
+    const displayGoal = freshGoal || goal;
+
     // State
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [progressInput, setProgressInput] = useState('');
     const [noteInput, setNoteInput] = useState('');
 
-    if (!goal) return null;
+    if (!displayGoal) return null;
 
-    const progress = calculateProgress(goal);
-    const typeConfig = GOAL_TYPE_CONFIGS[goal.type] || GOAL_TYPE_CONFIGS['custom'];
-    const overdue = isGoalOverdue(goal);
+    const progress = calculateProgress(displayGoal);
+    const typeConfig = GOAL_TYPE_CONFIGS[displayGoal.type] || GOAL_TYPE_CONFIGS['custom'];
+    const overdue = isGoalOverdue(displayGoal);
 
     const handleDelete = () => {
-        deleteGoal(goal.id, {
+        deleteGoal(displayGoal.id, {
             onSuccess: () => {
                 onOpenChange(false);
                 setConfirmDelete(false);
@@ -45,7 +49,7 @@ export function GoalDetailsDialog({ goal, open, onOpenChange, onEdit }: GoalDeta
         const val = parseFloat(progressInput);
         if (isNaN(val) || val <= 0) return;
 
-        addProgress({ goalId: goal.id, payload: { delta_value: val, notes: noteInput || 'Atualização manual' } }, {
+        addProgress({ goalId: displayGoal.id, payload: { delta_value: val, notes: noteInput || 'Atualização manual' } }, {
             onSuccess: () => {
                 setProgressInput('');
                 setNoteInput('');
@@ -69,10 +73,10 @@ export function GoalDetailsDialog({ goal, open, onOpenChange, onEdit }: GoalDeta
                         </div>
                         <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{typeConfig.label}</span>
                         {overdue && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Atrasada</span>}
-                        {goal.status === 'done' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Concluída</span>}
+                        {displayGoal.status === 'done' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Concluída</span>}
                     </div>
-                    <DialogTitle className="text-2xl">{goal.title}</DialogTitle>
-                    {goal.description && <DialogDescription className="text-base">{goal.description}</DialogDescription>}
+                    <DialogTitle className="text-2xl">{displayGoal.title}</DialogTitle>
+                    {displayGoal.description && <DialogDescription className="text-base">{displayGoal.description}</DialogDescription>}
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
@@ -80,16 +84,16 @@ export function GoalDetailsDialog({ goal, open, onOpenChange, onEdit }: GoalDeta
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="p-4 bg-muted/50 rounded-lg text-center">
                             <div className="text-sm text-muted-foreground mb-1">Meta</div>
-                            <div className="text-xl font-bold">{goal.target_value} {goal.unit}</div>
+                            <div className="text-xl font-bold">{displayGoal.target_value} {displayGoal.unit}</div>
                         </div>
                         <div className="p-4 bg-muted/50 rounded-lg text-center">
                             <div className="text-sm text-muted-foreground mb-1">Atual</div>
-                            <div className="text-xl font-bold">{goal.current_value || 0} {goal.unit}</div>
+                            <div className="text-xl font-bold">{displayGoal.current_value || 0} {displayGoal.unit}</div>
                         </div>
                         <div className="p-4 bg-muted/50 rounded-lg text-center">
                             <div className="text-sm text-muted-foreground mb-1">Restante</div>
                             <div className="text-xl font-bold">
-                                {Math.max(0, goal.target_value - (goal.current_value || 0))} {goal.unit}
+                                {Math.max(0, displayGoal.target_value - (displayGoal.current_value || 0))} {displayGoal.unit}
                             </div>
                         </div>
                     </div>     {/* Progress Bar Large */}
@@ -102,14 +106,14 @@ export function GoalDetailsDialog({ goal, open, onOpenChange, onEdit }: GoalDeta
                     </div>
 
                     {/* Add Progress Section */}
-                    {goal.status !== 'done' && (
+                    {displayGoal.status !== 'done' && (
                         <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                             <h4 className="font-semibold text-sm">Adicionar Progresso</h4>
                             <div className="flex gap-3">
                                 <div className="flex-1 space-y-1">
                                     <Input
                                         type="number"
-                                        placeholder={`Quantidade (${goal.unit})`}
+                                        placeholder={`Quantidade (${displayGoal.unit})`}
                                         value={progressInput}
                                         onChange={e => setProgressInput(e.target.value)}
                                     />
@@ -130,15 +134,15 @@ export function GoalDetailsDialog({ goal, open, onOpenChange, onEdit }: GoalDeta
 
                     {/* Metadata */}
                     <div className="flex flex-col sm:flex-row gap-4 text-sm text-muted-foreground border-t pt-4">
-                        {goal.due_date && (
+                        {displayGoal.due_date && (
                             <div className="flex items-center gap-2">
                                 <Calendar className="h-4 w-4" />
-                                <span>Data Limite: {format(new Date(goal.due_date), 'dd/MM/yyyy')}</span>
+                                <span>Data Limite: {format(new Date(displayGoal.due_date), 'dd/MM/yyyy')}</span>
                             </div>
                         )}
                         <div className="flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4" />
-                            <span>Status: {GOAL_STATUS_LABELS[goal.status]}</span>
+                            <span>Status: {GOAL_STATUS_LABELS[displayGoal.status]}</span>
                         </div>
                     </div>
                 </div>
@@ -160,7 +164,7 @@ export function GoalDetailsDialog({ goal, open, onOpenChange, onEdit }: GoalDeta
                             <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setConfirmDelete(true)}>
                                 <Trash2 className="h-4 w-4 mr-2" /> Excluir Meta
                             </Button>
-                            <Button variant="outline" onClick={() => onEdit?.(goal)}>
+                            <Button variant="outline" onClick={() => onEdit?.(displayGoal)}>
                                 <Edit className="h-4 w-4 mr-2" /> Editar
                             </Button>
                         </div>

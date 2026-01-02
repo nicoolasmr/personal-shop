@@ -134,6 +134,42 @@ export default function HabitsPage() {
                                 const weekly = getWeeklyStatus(habit);
                                 const isDone = isDoneToday(habit);
 
+                                // Calculate real progress (this month)
+                                const today = new Date();
+                                const currentMonthCheckins = habit.checkins?.filter(c =>
+                                    isSameMonth(new Date(c.checkin_date), today) && c.completed
+                                ).length || 0;
+                                const daysInMonth = today.getDate(); // Days passed this month
+                                const progress = daysInMonth > 0 ? Math.min(Math.round((currentMonthCheckins / daysInMonth) * 100), 100) : 0;
+
+                                // Calculate current streak
+                                const calculateStreak = () => {
+                                    if (!habit.checkins || habit.checkins.length === 0) return 0;
+                                    const sortedCheckins = [...habit.checkins]
+                                        .filter(c => c.completed)
+                                        .sort((a, b) => new Date(b.checkin_date).getTime() - new Date(a.checkin_date).getTime());
+
+                                    let streak = 0;
+                                    let checkDate = new Date();
+                                    checkDate.setHours(0, 0, 0, 0);
+
+                                    for (const checkin of sortedCheckins) {
+                                        const checkinDate = new Date(checkin.checkin_date);
+                                        checkinDate.setHours(0, 0, 0, 0);
+
+                                        if (isSameDay(checkinDate, checkDate) || isSameDay(checkinDate, subDays(checkDate, 1))) {
+                                            streak++;
+                                            checkDate = checkinDate;
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                    return streak;
+                                };
+
+                                const currentStreak = calculateStreak();
+                                const bestStreak = habit.checkins?.length || 0; // Simplified; ideally calculate historical max
+
                                 return (
                                     <Card
                                         key={habit.id}
@@ -156,9 +192,9 @@ export default function HabitsPage() {
                                                 <div className="flex flex-col items-end">
                                                     <div className="flex items-center text-orange-500 gap-1 mb-1">
                                                         <Flame className="h-5 w-5 fill-current" />
-                                                        <span className="font-bold text-lg">0</span>
+                                                        <span className="font-bold text-lg">{currentStreak}</span>
                                                     </div>
-                                                    <span className="text-xs text-muted-foreground">Melhor: 12</span>
+                                                    <span className="text-xs text-muted-foreground">Melhor: {bestStreak}</span>
                                                 </div>
                                             </div>
 
@@ -184,9 +220,9 @@ export default function HabitsPage() {
                                             <div className="space-y-4">
                                                 <div className="flex justify-between text-sm">
                                                     <span>Progresso</span>
-                                                    <span>23%</span>
+                                                    <span>{progress}%</span>
                                                 </div>
-                                                <Progress value={23} className="h-2" />
+                                                <Progress value={progress} className="h-2" />
 
                                                 <Button
                                                     onClick={(e) => { e.stopPropagation(); handleToggle(habit.id); }}

@@ -7,22 +7,31 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenant } from '@/hooks/useTenant';
 import { AchievementsShowcase } from '@/components/home/AchievementsShowcase';
-import { User, Mail, Building, Calendar, Save, Loader2, Upload } from 'lucide-react';
+import { User, Mail, Building, Calendar, Save, Loader2, Upload, Phone, Briefcase, Clock, Lock, Settings } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { updateProfile, uploadAvatar, UpdateProfileData } from '@/services/user';
 import { useToast } from '@/hooks/use-toast';
+import { ProfilePreferences } from '@/components/profile/ProfilePreferences';
+import { ChangePasswordDialog } from '@/components/profile/ChangePasswordDialog';
 
 export default function ProfilePage() {
     const { user, signOut } = useAuth();
     const { profile, org, loading, refetch: refetchTenant, error, configured } = useTenant();
     const [isEditing, setIsEditing] = useState(false);
-    const [nameDraft, setNameDraft] = useState('');
+    const [formData, setFormData] = useState<UpdateProfileData>({ full_name: '' });
+    const [showPasswordDialog, setShowPasswordDialog] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
     // Init draft name when editing starts
     const handleStartEdit = () => {
-        setNameDraft(profile?.full_name || '');
+        setFormData({
+            full_name: profile?.full_name || '',
+            age: profile?.age,
+            profession: profile?.profession,
+            routine: profile?.routine,
+            phone: profile?.phone
+        });
         setIsEditing(true);
     };
 
@@ -54,8 +63,10 @@ export default function ProfilePage() {
         onSuccess: async (url) => {
             // Immediately update profile with new avatar URL
             // We preserve the current name (or draft)
-            const currentName = isEditing ? nameDraft : (profile?.full_name || '');
-            await updateProfileMutation.mutateAsync({ full_name: currentName, avatar_url: url });
+            // Immediately update profile with new avatar URL
+            // We preserve the current name (or draft)
+            const currentData = isEditing ? formData : { full_name: profile?.full_name || '' };
+            await updateProfileMutation.mutateAsync({ ...currentData, avatar_url: url });
             // Toast handled by update profile success, or distinct one here?
             // Let's rely on update profile success, or add specific one.
         },
@@ -72,7 +83,7 @@ export default function ProfilePage() {
     };
 
     const handleSave = () => {
-        updateProfileMutation.mutate({ full_name: nameDraft });
+        updateProfileMutation.mutate(formData);
     };
 
     if (!configured) {
@@ -107,8 +118,9 @@ export default function ProfilePage() {
             </div>
 
             <Tabs defaultValue="profile">
-                <TabsList>
+                <TabsList className="grid w-full grid-cols-3 max-w-[400px]">
                     <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
+                    <TabsTrigger value="preferences">Preferências</TabsTrigger>
                     <TabsTrigger value="achievements">Conquistas</TabsTrigger>
                 </TabsList>
 
@@ -151,9 +163,10 @@ export default function ProfilePage() {
                                         <label className="text-sm font-medium">Nome Completo</label>
                                         <div className="flex gap-2">
                                             <Input
-                                                value={isEditing ? nameDraft : (profile?.full_name || '')}
-                                                onChange={(e) => setNameDraft(e.target.value)}
+                                                value={isEditing ? formData.full_name : (profile?.full_name || '')}
+                                                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                                                 disabled={!isEditing}
+                                                placeholder="Seu nome"
                                             />
                                             {!isEditing ? (
                                                 <Button variant="outline" size="icon" onClick={handleStartEdit}><User className="h-4 w-4" /></Button>
@@ -162,6 +175,47 @@ export default function ProfilePage() {
                                                     {updateProfileMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                                                 </Button>
                                             )}
+                                        </div>
+                                    </div>
+
+                                    {/* Campos Estendidos */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid gap-2">
+                                            <label className="text-sm font-medium flex items-center gap-2"><Phone className="h-3 w-3" /> Telefone (WhatsApp)</label>
+                                            <Input
+                                                value={isEditing ? (formData.phone || '') : (profile?.phone || '')}
+                                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                                disabled={!isEditing}
+                                                placeholder="+55 11 99999-9999"
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <label className="text-sm font-medium flex items-center gap-2"><Calendar className="h-3 w-3" /> Idade</label>
+                                            <Input
+                                                type="number"
+                                                value={isEditing ? (formData.age || '') : (profile?.age || '')}
+                                                onChange={(e) => setFormData({ ...formData, age: Number(e.target.value) })}
+                                                disabled={!isEditing}
+                                                placeholder="Anos"
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <label className="text-sm font-medium flex items-center gap-2"><Briefcase className="h-3 w-3" /> Profissão</label>
+                                            <Input
+                                                value={isEditing ? (formData.profession || '') : (profile?.profession || '')}
+                                                onChange={(e) => setFormData({ ...formData, profession: e.target.value })}
+                                                disabled={!isEditing}
+                                                placeholder="Ex: Engenheiro"
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <label className="text-sm font-medium flex items-center gap-2"><Clock className="h-3 w-3" /> Rotina</label>
+                                            <Input
+                                                value={isEditing ? (formData.routine || '') : (profile?.routine || '')}
+                                                onChange={(e) => setFormData({ ...formData, routine: e.target.value })}
+                                                disabled={!isEditing}
+                                                placeholder="Ex: Corrida matinal, Trabalho 9-18h"
+                                            />
                                         </div>
                                     </div>
 
@@ -193,17 +247,23 @@ export default function ProfilePage() {
                             </div>
 
                             <div className="border-t pt-4 mt-4">
-                                <h3 className="font-medium mb-3">Segurança</h3>
-                                <Button variant="outline" disabled>Alterar Senha (Em breve)</Button>
+                                <h3 className="font-medium mb-3 flex items-center gap-2"><Lock className="h-4 w-4" /> Segurança</h3>
+                                <Button variant="outline" onClick={() => setShowPasswordDialog(true)}>Alterar Senha</Button>
                             </div>
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                <TabsContent value="preferences" className="pt-4">
+                    <ProfilePreferences initialLanguage={profile?.language} />
                 </TabsContent>
 
                 <TabsContent value="achievements" className="pt-4">
                     <AchievementsShowcase />
                 </TabsContent>
             </Tabs>
+
+            <ChangePasswordDialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog} />
         </div>
     );
 }

@@ -4,7 +4,14 @@ import { useAuth } from './useAuth';
 import type { Database } from '@/integrations/supabase/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+// Extended Profile type to include new fields not yet in generated types
+type Profile = Database['public']['Tables']['profiles']['Row'] & {
+    age?: number | null;
+    profession?: string | null;
+    routine?: string | null;
+    phone?: string | null;
+    language?: string;
+};
 type Org = Database['public']['Tables']['orgs']['Row'];
 
 interface TenantContextType {

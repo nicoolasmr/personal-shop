@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addMonths, subMonths, addDays, getDay, startOfMonth, endOfMonth, addWeeks, subWeeks, setHours, setMinutes, isSameHour } from 'date-fns';
 import { useCalendarEvents, useCreateEvent, useDeleteEvent } from '@/hooks/queries/useCalendar';
 import { CreateEventDialog } from '@/components/calendar/CreateEventDialog';
+import { EventDetailsDialog } from '@/components/calendar/EventDetailsDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -13,6 +14,17 @@ import { CalendarEvent } from '@/services/calendar';
 
 type ViewMode = 'month' | 'week' | 'day';
 
+const EVENT_COLOR_MAP: Record<string, string> = {
+    blue: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
+    green: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
+    red: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800",
+    yellow: "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800",
+    purple: "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800",
+    pink: "bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800",
+    orange: "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800",
+    gray: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800",
+};
+
 export default function CalendarPage() {
     const [date, setDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -23,6 +35,7 @@ export default function CalendarPage() {
 
     // Fetch events. Logic might need optimization for week/day boundaries, but fetching month is safe for now.
     const { data: events, isLoading } = useCalendarEvents(date.getFullYear(), date.getMonth() + 1);
+    const { mutate: deleteEvent } = useDeleteEvent();
 
     const navigate = (direction: 'prev' | 'next') => {
         if (viewMode === 'month') {
@@ -256,16 +269,16 @@ export default function CalendarPage() {
                                     + Adicionar evento
                                 </Button>
                                 {selectedDayEvents.map(e => {
-                                    const colorClass = e.color ? `bg-${e.color}-100 text-${e.color}-700 border-${e.color}-200` : 'bg-blue-100 text-blue-700 border-blue-200';
-                                    const darkColorClass = e.color ? `dark:bg-${e.color}-900/30 dark:text-${e.color}-300 dark:border-${e.color}-800` : 'dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+                                    const colorClass = (e.color && EVENT_COLOR_MAP[e.color])
+                                        ? EVENT_COLOR_MAP[e.color]
+                                        : EVENT_COLOR_MAP['blue'];
 
                                     return (
                                         <div
                                             key={e.id}
                                             className={cn(
                                                 "p-3 rounded-lg border cursor-pointer transition-all shadow-sm hover:shadow-md relative group",
-                                                colorClass,
-                                                darkColorClass
+                                                colorClass
                                             )}
                                             onClick={() => setSelectedEvent(e)}
                                         >
@@ -352,53 +365,19 @@ export default function CalendarPage() {
             />
 
             {/* Event Details Dialog Reuse */}
-            <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <div className="flex items-center gap-2">
-                            {selectedEvent?.color && (
-                                <div className={`w-3 h-3 rounded-full bg-${selectedEvent.color}-500`} />
-                            )}
-                            <DialogTitle>{selectedEvent?.title}</DialogTitle>
-                        </div>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="flex items-center gap-3">
-                            <Clock className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                                <div className="font-medium text-sm">
-                                    {selectedEvent && format(new Date(selectedEvent.start_at), 'PPP', { locale: ptBR })}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                    {selectedEvent && format(new Date(selectedEvent.start_at), 'HH:mm')} -
-                                    {selectedEvent && format(new Date(selectedEvent.end_at), 'HH:mm')}
-                                </div>
-                            </div>
-                        </div>
-                        {selectedEvent?.location && (
-                            <div className="flex items-center gap-3">
-                                <MapPin className="h-5 w-5 text-muted-foreground" />
-                                <div className="text-sm">{selectedEvent.location}</div>
-                            </div>
-                        )}
-                        {selectedEvent?.description && (
-                            <div className="bg-muted/30 p-3 rounded-md text-sm whitespace-pre-wrap">
-                                {selectedEvent.description}
-                            </div>
-                        )}
-
-                        <div className="flex justify-end gap-2 pt-4 border-t">
-                            <Button variant="outline" size="sm" onClick={() => {
-                                setEditEvent(selectedEvent);
-                                setIsCreateOpen(true);
-                            }}>
-                                Editar
-                            </Button>
-                            <DeleteEventButton eventId={selectedEvent?.id} onDelete={() => setSelectedEvent(null)} />
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <EventDetailsDialog
+                open={!!selectedEvent}
+                onOpenChange={(open) => !open && setSelectedEvent(null)}
+                event={selectedEvent}
+                onEdit={(evt) => {
+                    setSelectedEvent(null);
+                    setEditEvent(evt);
+                    setIsCreateOpen(true);
+                }}
+                onDelete={(id) => {
+                    deleteEvent(id, { onSuccess: () => setSelectedEvent(null) });
+                }}
+            />
         </div>
     );
 }
