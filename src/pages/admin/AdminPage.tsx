@@ -1,9 +1,31 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Shield, Users, Activity, Settings, ExternalLink } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export default function AdminPage() {
+    const navigate = useNavigate();
+
+    const handleManageUsers = () => {
+        // TODO: Implement user management page
+        toast.info('Gestão de Usuários', {
+            description: 'Esta funcionalidade será implementada em breve.'
+        });
+    };
+
+    const handleViewLogs = () => {
+        // Navigate to ops diagnostics
+        navigate('/ops/diagnostics');
+    };
+
+    const handleSettings = () => {
+        // TODO: Implement settings page
+        toast.info('Configurações', {
+            description: 'Esta funcionalidade será implementada em breve.'
+        });
+    };
+
     return (
         <div className="space-y-8 animate-smooth-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -27,7 +49,14 @@ export default function AdminPage() {
                     <CardContent>
                         <div className="text-3xl font-bold">128</div>
                         <p className="text-xs text-muted-foreground mt-1">+12 novos esta semana</p>
-                        <Button className="w-full mt-6" variant="secondary" size="sm">Gerenciar</Button>
+                        <Button
+                            className="w-full mt-6"
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleManageUsers}
+                        >
+                            Gerenciar
+                        </Button>
                     </CardContent>
                 </Card>
 
@@ -39,7 +68,14 @@ export default function AdminPage() {
                     <CardContent>
                         <div className="text-3xl font-bold text-emerald-500">100%</div>
                         <p className="text-xs text-muted-foreground mt-1">Sistemas operando normalmente</p>
-                        <Button className="w-full mt-6" variant="secondary" size="sm">Ver Logs</Button>
+                        <Button
+                            className="w-full mt-6"
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleViewLogs}
+                        >
+                            Ver Logs
+                        </Button>
                     </CardContent>
                 </Card>
 
@@ -51,7 +87,14 @@ export default function AdminPage() {
                     <CardContent>
                         <div className="text-3xl font-bold">Ativas</div>
                         <p className="text-xs text-muted-foreground mt-1">V7.2.4 - Produção</p>
-                        <Button className="w-full mt-6" variant="secondary" size="sm">Ajustar</Button>
+                        <Button
+                            className="w-full mt-6"
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleSettings}
+                        >
+                            Ajustar
+                        </Button>
                     </CardContent>
                 </Card>
             </div>

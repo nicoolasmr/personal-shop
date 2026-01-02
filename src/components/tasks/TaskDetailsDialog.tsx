@@ -72,16 +72,19 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
         }
     };
 
-    // Reset form when task changes
-    if (task && task.id && form.getValues('title') !== task.title && !form.formState.isDirty) {
-        form.reset({
-            title: task.title,
-            description: task.description || '',
-            status: task.status,
-            priority: task.priority,
-            due_date: task.due_date ? new Date(task.due_date) : undefined,
-        });
-    }
+    // Reset form when task changes - moved to useEffect to prevent render loop
+    useEffect(() => {
+        if (task && open) {
+            form.reset({
+                title: task.title,
+                description: task.description || '',
+                status: task.status,
+                priority: task.priority,
+                due_date: task.due_date ? new Date(task.due_date) : undefined,
+            });
+            setIsEditing(false);
+        }
+    }, [task?.id, open]);
 
     const onSubmit = (data: UpdateTaskFormValues) => {
         if (!task) return;

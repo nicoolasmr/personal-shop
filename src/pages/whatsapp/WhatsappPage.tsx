@@ -4,8 +4,47 @@ import { MessageCircle, Send, Phone, Video, MoreVertical, Smartphone, CheckCircl
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 export default function WhatsappPage() {
+    const [message, setMessage] = useState('');
+
+    const handleDisconnect = () => {
+        toast.info('Desconectar WhatsApp', {
+            description: 'Esta funcionalidade será implementada em breve.'
+        });
+    };
+
+    const handleSettings = () => {
+        toast.info('Configurações', {
+            description: 'Configure notificações e automações do WhatsApp.'
+        });
+    };
+
+    const handleCall = () => {
+        toast.info('Chamada de Voz', {
+            description: 'Funcionalidade de chamada em desenvolvimento.'
+        });
+    };
+
+    const handleVideoCall = () => {
+        toast.info('Chamada de Vídeo', {
+            description: 'Funcionalidade de vídeo em desenvolvimento.'
+        });
+    };
+
+    const handleSendMessage = () => {
+        if (!message.trim()) {
+            toast.error('Digite uma mensagem');
+            return;
+        }
+        toast.success('Mensagem enviada!', {
+            description: message
+        });
+        setMessage('');
+    };
+
     return (
         <div className="space-y-6 h-[calc(100vh-140px)] flex flex-col animate-smooth-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -17,7 +56,7 @@ export default function WhatsappPage() {
                     <Badge variant="outline" className="h-9 px-4 gap-2 border-emerald-500/30 text-emerald-600 bg-emerald-50/50">
                         <CheckCircle2 className="h-4 w-4" /> Conectado
                     </Badge>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={handleSettings}>
                         <Settings className="h-5 w-5" />
                     </Button>
                 </div>
@@ -38,7 +77,11 @@ export default function WhatsappPage() {
                                     <p className="text-xs text-muted-foreground">Última conexão: Agora</p>
                                 </div>
                             </div>
-                            <Button variant="outline" className="w-full text-red-500 hover:text-red-600 hover:bg-red-50">
+                            <Button
+                                variant="outline"
+                                className="w-full text-red-500 hover:text-red-600 hover:bg-red-50"
+                                onClick={handleDisconnect}
+                            >
                                 Desconectar WhatsApp
                             </Button>
                         </CardContent>
@@ -76,9 +119,9 @@ export default function WhatsappPage() {
                             </div>
                         </div>
                         <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8"><Phone className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"><Video className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCall}><Phone className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleVideoCall}><Video className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSettings}><MoreVertical className="h-4 w-4" /></Button>
                         </div>
                     </CardHeader>
 
