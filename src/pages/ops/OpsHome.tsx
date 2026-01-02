@@ -15,7 +15,7 @@ const OpsHome = () => {
                     <div className="flex-1 text-center md:text-left space-y-2">
                         <h1 className="text-4xl font-black tracking-tight text-white uppercase italic">Central de Comando</h1>
                         <p className="text-slate-400 text-lg font-medium leading-relaxed max-w-2xl">
-                            Infraestrutura VID360 operando em nível nominal. Todos os sistemas de segurança e monitoramento de transações estão ativos.
+                            Infraestrutura VIDA360 operando em nível nominal. Todos os sistemas de segurança e monitoramento de transações estão ativos.
                         </p>
                         <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-2">
                             <Badge className="bg-emerald-500/10 text-emerald-400 border-none px-3 py-1 font-mono uppercase tracking-widest text-[10px]">AUTH_MODE: RBAC_STRICT</Badge>

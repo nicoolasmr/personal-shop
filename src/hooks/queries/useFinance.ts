@@ -8,9 +8,10 @@ import {
     fetchCategoryBreakdown, fetchActiveInstallments, fetchInstallmentsSummary,
     fetchFinanceGoals, createFinanceGoal, updateFinanceGoal, deleteFinanceGoal,
     bulkCreateTransactions, syncFinanceGoalsWithTransactions,
+    fetchSavingsGoals, createSavingsGoal, updateSavingsGoal, deleteSavingsGoal,
 } from '@/services/finance';
 import { createGoalFromFinanceGoal, updateLinkedGoal, deleteLinkedGoal } from '@/services/goalFinanceSync';
-import type { CreateTransactionPayload, UpdateTransactionPayload, CreateCategoryPayload, TransactionType, CreateFinanceGoalPayload, UpdateFinanceGoalPayload } from '@/types/finance';
+import type { CreateTransactionPayload, UpdateTransactionPayload, CreateCategoryPayload, TransactionType, CreateFinanceGoalPayload, UpdateFinanceGoalPayload, CreateSavingsGoalPayload, UpdateSavingsGoalPayload } from '@/types/finance';
 
 export function useFinance(year?: number, month?: number) {
     const { profile } = useTenant();
@@ -115,13 +116,62 @@ export function useFinance(year?: number, month?: number) {
         onError: (error: Error) => { toast({ title: 'Erro ao importar', description: error.message, variant: 'destructive' }); },
     });
 
+    // Savings Goals
+    const { data: savingsGoals = [], isLoading: savingsGoalsLoading } = useQuery({
+        queryKey: ['savings-goals', orgId, user?.id],
+        queryFn: () => { if (!orgId || !user?.id) return []; return fetchSavingsGoals(orgId!, user!.id); },
+        enabled: !!orgId && !!user?.id,
+    });
+
+    const createSavingsGoalMutation = useMutation({
+        mutationFn: (payload: CreateSavingsGoalPayload) => {
+            if (!orgId || !user?.id) throw new Error('Auth required');
+            return createSavingsGoal(orgId!, user!.id, payload);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['savings-goals'] });
+            toast({ title: 'Meta de economia criada!' });
+        },
+        onError: (error: Error) => {
+            toast({ title: 'Erro ao criar meta', description: error.message, variant: 'destructive' });
+        },
+    });
+
+    const updateSavingsGoalMutation = useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: UpdateSavingsGoalPayload }) => {
+            return updateSavingsGoal(id, payload);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['savings-goals'] });
+            toast({ title: 'Meta atualizada!' });
+        },
+        onError: (error: Error) => {
+            toast({ title: 'Erro ao atualizar meta', description: error.message, variant: 'destructive' });
+        },
+    });
+
+    const deleteSavingsGoalMutation = useMutation({
+        mutationFn: (id: string) => deleteSavingsGoal(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['savings-goals'] });
+            toast({ title: 'Meta removida!' });
+        },
+        onError: (error: Error) => {
+            toast({ title: 'Erro ao remover meta', description: error.message, variant: 'destructive' });
+        },
+    });
+
     return {
         transactions, categories, summary: summary || { total_income: 0, total_expense: 0, balance: 0, transaction_count: 0 },
-        financeGoals, isLoading: transactionsLoading || categoriesLoading || summaryLoading,
+        financeGoals, savingsGoals,
+        isLoading: transactionsLoading || categoriesLoading || summaryLoading,
         installments, installmentsSummary: installmentsSummary || { total_active_installments: 0, total_monthly_commitment: 0, total_remaining_amount: 0 },
         error: transactionsError,
         createTransaction: createTransactionMutation.mutate,
         createFinanceGoal: createGoalMutation.mutate,
+        createSavingsGoal: createSavingsGoalMutation.mutate,
+        updateSavingsGoal: updateSavingsGoalMutation.mutate,
+        deleteSavingsGoal: deleteSavingsGoalMutation.mutate,
         bulkImportTransactions: bulkImportMutation.mutateAsync,
         isImporting: bulkImportMutation.isPending,
         // ... more exposed methods

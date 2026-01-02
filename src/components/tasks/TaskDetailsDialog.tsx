@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -39,6 +39,36 @@ const updateTaskSchema = z.object({
 
 type UpdateTaskFormValues = z.infer<typeof updateTaskSchema>;
 
+// Simple linkify component
+const LinkifiedText = ({ text }: { text: string }) => {
+    if (!text) return <span className="text-muted-foreground italic">Sem descrição disponível.</span>;
+
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+
+    return (
+        <>
+            {parts.map((part, i) => {
+                if (part.match(urlRegex)) {
+                    return (
+                        <a
+                            key={i}
+                            href={part}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline font-medium break-all"
+                            onClick={(e) => e.stopPropagation()} // Prevent parent clicks
+                        >
+                            {part}
+                        </a>
+                    );
+                }
+                return <span key={i}>{part}</span>;
+            })}
+        </>
+    );
+};
+
 export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialogProps) {
     const { mutate: updateTask } = useUpdateTask();
     const { mutate: createSubtask } = useCreateSubtask();
@@ -51,6 +81,9 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
     const [selectedAttachment, setSelectedAttachment] = useState<TaskAttachment | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    // Cache for signed URLs to speed up viewing
+    const signedUrlCache = useRef<Record<string, string>>({});
 
     const form = useForm<UpdateTaskFormValues>({
         resolver: zodResolver(updateTaskSchema),
@@ -79,17 +112,29 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
         }
     }, [task?.id, open, form]);
 
-    // Fetch signed URL for attachment preview
+    // Fetch signed URL for attachment preview with caching
     useEffect(() => {
         if (!selectedAttachment) {
             setPreviewUrl(null);
             return;
         }
 
+        const cachedUrl = signedUrlCache.current[selectedAttachment.id];
+        if (cachedUrl) {
+            setPreviewUrl(cachedUrl);
+            return;
+        }
+
         let isMounted = true;
+        // Set temp null to show loader if not cached
+        setPreviewUrl(null);
+
         tasksService.getAttachmentSignedUrl(selectedAttachment.file_path)
             .then(url => {
-                if (isMounted) setPreviewUrl(url);
+                if (isMounted && url) {
+                    signedUrlCache.current[selectedAttachment.id] = url;
+                    setPreviewUrl(url);
+                }
             })
             .catch(err => {
                 console.error('Error fetching signed URL:', err);
@@ -285,7 +330,7 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
                                                 <Tag className="h-3 w-3" /> Descrição
                                             </h3>
                                             <div className="bg-background p-5 rounded-2xl border border-border/50 text-sm whitespace-pre-wrap leading-relaxed shadow-sm">
-                                                {task.description || <span className="text-muted-foreground italic">Sem descrição disponível.</span>}
+                                                <LinkifiedText text={task.description} />
                                             </div>
                                         </div>
 
@@ -524,3 +569,4 @@ export function TaskDetailsDialog({ task, open, onOpenChange }: TaskDetailsDialo
         </>
     );
 }
+

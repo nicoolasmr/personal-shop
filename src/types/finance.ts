@@ -15,7 +15,7 @@ export interface Transaction {
     description: string; notes: string | null; transaction_date: string; is_recurring: boolean;
     recurring_frequency: RecurringFrequency | null; payment_method: PaymentMethod;
     installment_count: number; installment_number: number; parent_transaction_id: string | null;
-    is_installment_parcel: boolean; created_at: string; updated_at: string;
+    is_installment_parcel: boolean; is_loan?: boolean; loan_contact?: string | null; created_at: string; updated_at: string;
 }
 
 export interface TransactionWithCategory extends Transaction { category?: TransactionCategory | null; }
@@ -23,7 +23,7 @@ export interface TransactionWithCategory extends Transaction { category?: Transa
 export interface CreateTransactionPayload {
     type: TransactionType; amount: number; description: string; notes?: string; category_id?: string;
     transaction_date?: string; is_recurring?: boolean; recurring_frequency?: RecurringFrequency;
-    payment_method?: PaymentMethod; installment_count?: number;
+    payment_method?: PaymentMethod; installment_count?: number; is_loan?: boolean; loan_contact?: string;
 }
 
 export interface UpdateTransactionPayload { type?: TransactionType; amount?: number; description?: string; notes?: string; category_id?: string | null; transaction_date?: string; is_recurring?: boolean; recurring_frequency?: RecurringFrequency | null; payment_method?: PaymentMethod; }

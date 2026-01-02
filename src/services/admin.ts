@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 export interface AdminStats {
     totalUsers: number;
     newUsersThisWeek: number;
+    totalOrgs: number;
     systemHealth: number;
     featureFlags: { key: string, is_enabled: boolean }[];
 }
@@ -11,6 +12,11 @@ export async function getAdminStats(): Promise<AdminStats> {
     // Total Users count
     const { count: totalUsers } = await supabase
         .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+    // Total Orgs count
+    const { count: totalOrgs } = await supabase
+        .from('orgs')
         .select('*', { count: 'exact', head: true });
 
     // New Users this week
@@ -29,7 +35,8 @@ export async function getAdminStats(): Promise<AdminStats> {
     return {
         totalUsers: totalUsers || 0,
         newUsersThisWeek: newUsers || 0,
-        systemHealth: 100, // Placeholder for real health check
+        totalOrgs: totalOrgs || 0,
+        systemHealth: 100, // Placeholder
         featureFlags: flags || []
     };
 }

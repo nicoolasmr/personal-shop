@@ -3,10 +3,10 @@ import { useIsAdmin } from '@/hooks/useUserRole';
 import LoadingScreen from '@/components/LoadingScreen';
 
 export function AdminGuard() {
-    const isAdmin = useIsAdmin();
+    const { isAdmin, isLoading } = useIsAdmin() || {}; // Handle undefined return
 
     // While loading, show loading screen
-    if (isAdmin === undefined) {
+    if (isLoading || isAdmin === undefined) {
         return <LoadingScreen />;
     }
 

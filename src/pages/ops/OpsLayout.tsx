@@ -19,9 +19,9 @@ const OpsLayout = () => {
 
     const navItems = [
         { to: '/ops', icon: LayoutDashboard, label: 'Overview', end: true },
-        { to: '/ops/users', icon: Users, label: 'Users' },
-        { to: '/ops/orgs', icon: Building2, label: 'Academies' },
-        { to: '/ops/team', icon: ShieldAlert, label: 'Team Access' },
+        { to: '/ops/users', icon: Users, label: 'Usuários' },
+        { to: '/ops/orgs', icon: Building2, label: 'Organizações' },
+        { to: '/ops/team', icon: ShieldAlert, label: 'Acessos Time' },
         { to: '/ops/diagnostics', icon: Activity, label: 'Diagnostics' },
         { to: '/ops/bugs', icon: Bug, label: 'Bug Reports' },
         { to: '/ops/billing', icon: CreditCard, label: 'Billing' },

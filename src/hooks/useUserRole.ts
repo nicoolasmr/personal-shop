@@ -15,21 +15,23 @@ export function useUserRole() {
     return useQuery({
         queryKey: ['user-role', user?.id, org?.id],
         queryFn: async (): Promise<AppRole | null> => {
-            if (!user?.id || !org?.id) return null;
+            if (!user?.id) return null;
 
-            // First try memberships table (org-specific role)
-            const { data: membership, error: membershipError } = await supabase
-                .from('memberships')
-                .select('role')
-                .eq('user_id', user.id)
-                .eq('org_id', org.id)
-                .maybeSingle();
+            // 1. If we have an Org ID, check membership first (Org-specific role)
+            if (org?.id) {
+                const { data: membership, error: membershipError } = await supabase
+                    .from('memberships')
+                    .select('role')
+                    .eq('user_id', user.id)
+                    .eq('org_id', org.id)
+                    .maybeSingle();
 
-            if (!membershipError && membership) {
-                return (membership as RoleResult).role;
+                if (!membershipError && membership) {
+                    return (membership as RoleResult).role;
+                }
             }
 
-            // Fallback to user_roles table (global role)
+            // 2. Fallback to user_roles table (Global/Platform role)
             const { data: userRole, error: userRoleError } = await supabase
                 .from('user_roles')
                 .select('role')
@@ -42,12 +44,13 @@ export function useUserRole() {
 
             return 'member';
         },
-        enabled: !!user?.id && !!org?.id,
+        enabled: !!user?.id,
         staleTime: 5 * 60 * 1000, // 5 minutes
     });
 }
 
 export function useIsAdmin() {
-    const { data: role } = useUserRole();
-    return role === 'admin' || role === 'owner';
+    const { data: role, isLoading } = useUserRole();
+    const isAdmin = role === 'admin' || role === 'owner';
+    return { isAdmin, isLoading };
 }

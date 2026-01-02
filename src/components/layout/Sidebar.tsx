@@ -1,10 +1,10 @@
-
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Home, CheckSquare, Target, Activity, BarChart2, DollarSign, Calendar, User, LogOut, Shield, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
+import { useFeatureFlag } from '@/lib/flags';
 
 interface SidebarProps {
     className?: string;
@@ -15,22 +15,25 @@ interface SidebarProps {
 
 export function Sidebar({ className, onItemClick, isCollapsed, onToggle }: SidebarProps) {
     const { signOut } = useAuth();
-    const isAdmin = useIsAdmin();
+    const { isAdmin } = useIsAdmin();
+
+    // Feature Flags for UI
+    const whatsappEnabled = useFeatureFlag('whatsapp_enabled');
+    const agendaEnabled = useFeatureFlag('agenda_enabled');
 
     // Updated navigation items to match the user's uploaded images
     const navItems = [
         { to: '/app/home', icon: Home, label: 'Início' },
         { to: '/app/tasks', icon: CheckSquare, label: 'Tarefas' },
         { to: '/app/finance', icon: DollarSign, label: 'Finanças' },
-        { to: '/app/calendar', icon: Calendar, label: 'Agenda' },
+        ...(agendaEnabled ? [{ to: '/app/calendar', icon: Calendar, label: 'Agenda' }] : []),
         { to: '/app/habits', icon: Activity, label: 'Hábitos' },
         { to: '/app/goals', icon: Target, label: 'Metas' },
         { to: '/app/stats', icon: BarChart2, label: 'Estatísticas' },
         // Admin Item - Conditionally rendered based on role
         ...(isAdmin ? [{ to: '/app/admin', icon: Shield, label: 'Administração' }] : []),
-        { to: '/app/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
+        ...(whatsappEnabled ? [{ to: '/app/whatsapp', icon: MessageCircle, label: 'WhatsApp' }] : []),
         { to: '/app/profile', icon: User, label: 'Perfil' },
-        // Settings removed as requested (moved to Profile)
     ];
 
     return (

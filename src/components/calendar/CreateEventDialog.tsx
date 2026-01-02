@@ -274,7 +274,25 @@ export function CreateEventDialog({ open, onOpenChange, defaultDate, eventToEdit
                                     render={({ field }) => (
                                         <FormItem className="flex-1">
                                             <FormLabel>Início</FormLabel>
-                                            <FormControl><Input type="time" {...field} disabled={form.watch('all_day')} /></FormControl>
+                                            <FormControl>
+                                                <Input
+                                                    type="time"
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        field.onChange(e);
+                                                        // Auto-set end time to 1 hour later
+                                                        if (e.target.value) {
+                                                            const [hours, minutes] = e.target.value.split(':').map(Number);
+                                                            const date = new Date();
+                                                            date.setHours(hours, minutes);
+                                                            date.setHours(date.getHours() + 1);
+                                                            const endString = format(date, 'HH:mm');
+                                                            form.setValue('end_time', endString);
+                                                        }
+                                                    }}
+                                                    disabled={form.watch('all_day')}
+                                                />
+                                            </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}

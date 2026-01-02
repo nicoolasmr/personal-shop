@@ -13,7 +13,19 @@ initSentry();
 // - Trigger manually via ?reset=1
 // - Or automatically if a Service Worker is controlling the page (stale publish)
 (async () => {
-    if (!import.meta.env.PROD) return;
+    // Changed: Run this check always, even in dev, to fix the stuck localhost service worker issue
+    // if (!import.meta.env.PROD) return;
+
+    // Always unregister existing SWs if we are in dev or if reset flag is present
+    if (!import.meta.env.PROD) {
+        if ("serviceWorker" in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+                await registration.unregister();
+                console.log("Unregistered development service worker:", registration);
+            }
+        }
+    }
 
     const shouldReset = new URLSearchParams(window.location.search).get("reset") === "1";
     const hasSWController =

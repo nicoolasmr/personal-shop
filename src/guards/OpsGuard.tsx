@@ -32,10 +32,8 @@ const OpsGuard = () => {
             const appRole = user.app_metadata?.role;
             if (appRole === 'admin' || appRole === 'team') return appRole;
 
-            // Fallback: Check profile table "role" column if it exists (legacy)
-            // If it doesn't exist yet, this might fail, so we wrap in try/catch or just fail safe.
-            const { data } = await supabase.from('profiles').select('role').eq('user_id', user.id).single();
-            // @ts-expect-error - Known temporary type mismatch with Supabase roles
+            // Fallback: Check user_roles table
+            const { data } = await supabase.from('user_roles').select('role').eq('user_id', user.id).maybeSingle();
             return data?.role as string | null;
         },
         enabled: !!user && enabled && configured && supabaseConfigured, // Only check if user is allowed and flag is on
