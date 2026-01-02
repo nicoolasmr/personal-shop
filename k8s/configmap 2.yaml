@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vida360-config
+data:
+  # Non-sensitive configuration
+  NODE_ENV: "production"
+  # Note: Supabase URL is public and can be in ConfigMap
+  # VITE_SUPABASE_URL: "https://your-project.supabase.co"
