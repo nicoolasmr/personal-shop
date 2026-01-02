@@ -38,9 +38,26 @@ export async function createTransaction(orgId: string, userId: string, payload: 
     const parcelAmount = installmentCount > 1 ? Math.round((payload.amount / installmentCount) * 100) / 100 : payload.amount;
     const dateStr = payload.transaction_date || new Date().toISOString().split('T')[0];
 
+    // Get the actual user_id from profiles to ensure FK constraint is satisfied
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('user_id', userId)
+        .single();
+
+    const actualUserId = profile?.user_id || userId;
+
+    console.log('[createTransaction] Debug:', {
+        orgId,
+        userId,
+        actualUserId,
+        profileFound: !!profile,
+        payload: { ...payload, amount: parcelAmount }
+    });
+
     const { data: result, error } = await (supabase as any).from('transactions').insert({
         org_id: orgId,
-        user_id: userId,
+        user_id: actualUserId,
         type: payload.type,
         amount: parcelAmount,
         description: payload.description,
@@ -51,7 +68,10 @@ export async function createTransaction(orgId: string, userId: string, payload: 
         installment_number: 1,
     }).select().single();
 
-    if (error) throw error;
+    if (error) {
+        console.error('[createTransaction] Error:', error);
+        throw error;
+    }
     if (!result) throw new Error('Failed to create transaction');
 
     const data = result as Transaction;
