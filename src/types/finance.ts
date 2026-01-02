@@ -52,6 +52,55 @@ export interface UpdateFinanceGoalPayload { name?: string; target_amount?: numbe
 
 export const FINANCE_GOAL_TYPE_LABELS: Record<FinanceGoalType, string> = { savings: 'Poupança', expense_limit: 'Limite de Gastos', income_target: 'Meta de Receita', emergency_fund: 'Reserva de Emergência' };
 
+// Savings Goals (Metas de Economia)
+export interface SavingsGoal {
+    id: string;
+    org_id: string;
+    user_id: string;
+    name: string;
+    description: string | null;
+    target_amount: number;
+    current_amount: number;
+    icon: string;
+    color: string;
+    deadline: string | null;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CreateSavingsGoalPayload {
+    name: string;
+    description?: string;
+    target_amount: number;
+    current_amount?: number;
+    icon?: string;
+    color?: string;
+    deadline?: string;
+}
+
+export interface UpdateSavingsGoalPayload {
+    name?: string;
+    description?: string | null;
+    target_amount?: number;
+    current_amount?: number;
+    icon?: string;
+    color?: string;
+    deadline?: string | null;
+    is_active?: boolean;
+}
+
+export const DEFAULT_SAVINGS_GOALS = [
+    { name: 'Liberdade Financeira', icon: '💰', color: '#10B981', description: 'Construir independência financeira' },
+    { name: 'Viagem em Família', icon: '✈️', color: '#3B82F6', description: 'Economizar para viagem dos sonhos' },
+    { name: 'Reserva de Emergência', icon: '🏥', color: '#EF4444', description: 'Fundo para imprevistos' },
+    { name: 'Educação', icon: '🎓', color: '#8B5CF6', description: 'Investir em conhecimento' },
+    { name: 'Compra de Carro', icon: '🚗', color: '#F59E0B', description: 'Economizar para veículo' },
+    { name: 'Casa Própria', icon: '🏠', color: '#EC4899', description: 'Realizar o sonho da casa própria' },
+    { name: 'Casamento', icon: '💍', color: '#6366F1', description: 'Planejar o grande dia' },
+    { name: 'Aposentadoria', icon: '🏖️', color: '#14B8A6', description: 'Garantir o futuro' },
+];
+
 export function formatCurrency(value: number): string {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
