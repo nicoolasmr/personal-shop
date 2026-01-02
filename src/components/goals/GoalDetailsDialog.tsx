@@ -64,7 +64,7 @@ export function GoalDetailsDialog({ goal, open, onOpenChange, onEdit }: GoalDeta
 
     return (
         <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); setConfirmDelete(false); setIsEditMode(false); }}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     {/* ... Header content ... */}
                     <div className="flex items-center gap-2 mb-2">

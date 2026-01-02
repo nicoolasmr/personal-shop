@@ -127,7 +127,7 @@ export default function HabitsPage() {
                 </TabsList>
 
                 <TabsContent value={activeTab} className="space-y-4 mt-6">
-                    <div className="grid gap-6">
+                    <div className="grid grid-cols-1 gap-4 md:gap-6">
                         {habitList
                             .filter(h => activeTab === 'all' || h.category === activeTab)
                             .map(habit => {
