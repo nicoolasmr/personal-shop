@@ -55,29 +55,42 @@ export default function ProfilePage() {
     const uploadAvatarMutation = useMutation({
         mutationFn: async (file: File) => {
             if (!user?.id) throw new Error('User not found');
+            console.log('[Profile] Uploading avatar for user:', user.id);
             const { url, error } = await uploadAvatar(user.id, file);
-            if (error) throw new Error(error);
-            if (!url) throw new Error('Failed to get URL');
+            if (error) {
+                console.error('[Profile] Upload error:', error);
+                throw new Error(error);
+            }
+            if (!url) throw new Error('Failed to get public URL for avatar');
+            console.log('[Profile] Avatar uploaded, URL:', url);
             return url;
         },
         onSuccess: async (url) => {
             // Immediately update profile with new avatar URL
-            // We preserve the current name (or draft)
-            // Immediately update profile with new avatar URL
-            // We preserve the current name (or draft)
             const currentData = isEditing ? formData : { full_name: profile?.full_name || '' };
             await updateProfileMutation.mutateAsync({ ...currentData, avatar_url: url });
-            // Toast handled by update profile success, or distinct one here?
-            // Let's rely on update profile success, or add specific one.
+            toast({
+                title: 'Foto atualizada!',
+                description: 'Sua foto de perfil foi alterada com sucesso.'
+            });
         },
-        onError: (err) => {
-            toast({ title: 'Erro no upload', description: err.message, variant: 'destructive' });
+        onError: (err: any) => {
+            toast({
+                title: 'Erro no upload',
+                description: err.message || 'Verifique o formato e tamanho da imagem.',
+                variant: 'destructive'
+            });
         }
     });
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Basic size check (2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                toast({ title: 'Arquivo muito grande', description: 'O limite é 2MB.', variant: 'destructive' });
+                return;
+            }
             uploadAvatarMutation.mutate(file);
         }
     };
@@ -130,35 +143,57 @@ export default function ProfilePage() {
                             <CardTitle>Informações Pessoais</CardTitle>
                             <CardDescription>Visualize e edite seus dados de perfil</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="flex flex-col sm:flex-row gap-6 items-start">
-                                <div className="flex flex-col items-center gap-2">
-                                    <Avatar className="h-24 w-24">
-                                        <AvatarImage src={profile?.avatar_url || ''} className="object-cover" />
-                                        <AvatarFallback className="text-2xl font-bold">{userInitials}</AvatarFallback>
-                                    </Avatar>
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                    />
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        disabled={uploadAvatarMutation.isPending || updateProfileMutation.isPending}
-                                    >
-                                        {(uploadAvatarMutation.isPending || updateProfileMutation.isPending) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                        Alterar Foto
-                                    </Button>
-                                    <p className="text-xs text-muted-foreground mt-1 text-center max-w-[150px]">
-                                        Recomendado: 400x400px, máx 2MB.
-                                    </p>
+                        <CardContent className="space-y-8 pt-6">
+                            <div className="flex flex-col items-center sm:flex-row sm:items-start gap-10">
+                                {/* Centered Avatar Section with Premium Effects */}
+                                <div className="flex flex-col items-center shrink-0">
+                                    <div className="relative group">
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-indigo-600 rounded-full opacity-60 group-hover:opacity-100 blur transition duration-500"></div>
+                                        <Avatar className="h-32 w-32 border-4 border-background relative">
+                                            <AvatarImage src={profile?.avatar_url || ''} className="object-cover" />
+                                            <AvatarFallback className="text-3xl font-black bg-muted text-muted-foreground">{userInitials}</AvatarFallback>
+                                        </Avatar>
+                                        <Button
+                                            variant="secondary"
+                                            size="icon"
+                                            className="absolute bottom-1 right-1 h-9 w-9 rounded-full shadow-lg border-2 border-background opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={uploadAvatarMutation.isPending}
+                                        >
+                                            <Upload className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+
+                                    <div className="mt-4 flex flex-col items-center gap-3">
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleFileChange}
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-9 px-4 rounded-full font-bold text-xs uppercase tracking-wider"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={uploadAvatarMutation.isPending || updateProfileMutation.isPending}
+                                        >
+                                            {(uploadAvatarMutation.isPending || updateProfileMutation.isPending) ? (
+                                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                            ) : (
+                                                <Upload className="mr-2 h-3 w-3" />
+                                            )}
+                                            Alterar Foto
+                                        </Button>
+                                        <p className="text-[10px] text-muted-foreground font-medium text-center uppercase tracking-widest leading-relaxed">
+                                            JPEG, PNG ou WEBP<br />
+                                            Máx. 2MB
+                                        </p>
+                                    </div>
                                 </div>
 
-                                <div className="flex-1 space-y-4 w-full">
+                                <div className="flex-1 space-y-6 w-full">
                                     <div className="grid gap-2">
                                         <label className="text-sm font-medium">Nome Completo</label>
                                         <div className="flex gap-2">

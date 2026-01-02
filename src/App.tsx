@@ -40,6 +40,7 @@ const Diagnostics = lazy(() => import("./pages/ops/Diagnostics"));
 const Bugs = lazy(() => import("./pages/ops/Bugs"));
 const Billing = lazy(() => import("./pages/ops/Billing"));
 const FeatureFlags = lazy(() => import("./pages/ops/FeatureFlags"));
+const OpsOrgs = lazy(() => import("./pages/ops/OpsOrgs"));
 
 
 const App = () => (
@@ -98,6 +99,7 @@ const App = () => (
                                         <Route path="bugs" element={<Bugs />} />
                                         <Route path="billing" element={<Billing />} />
                                         <Route path="flags" element={<FeatureFlags />} />
+                                        <Route path="orgs" element={<OpsOrgs />} />
                                     </Route>
                                 </Route>
 

@@ -71,7 +71,7 @@ const OpsGuard = () => {
         return <Navigate to="/login" replace />;
     }
 
-    const isAuthorized = role === 'admin' || role === 'team';
+    const isAuthorized = role === 'admin' || role === 'team' || role === 'owner';
 
     if (!isAuthorized) {
         // Logged in but not authorized

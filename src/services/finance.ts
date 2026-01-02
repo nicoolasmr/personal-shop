@@ -39,13 +39,17 @@ export async function createTransaction(orgId: string, userId: string, payload: 
     const dateStr = payload.transaction_date || new Date().toISOString().split('T')[0];
 
     // Get the actual user_id from profiles to ensure FK constraint is satisfied
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('user_id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-    const actualUserId = profile?.user_id || userId;
+    if (profileError) {
+        console.error('[createTransaction] Error fetching profile:', profileError);
+    }
+
+    const actualUserId = profile?.user_id ?? userId;
 
     console.log('[createTransaction] Debug:', {
         orgId,

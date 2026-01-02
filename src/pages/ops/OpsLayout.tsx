@@ -3,6 +3,7 @@ import { Outlet, NavLink } from 'react-router-dom';
 import {
     LayoutDashboard,
     Users,
+    Building2,
     ShieldAlert,
     Activity,
     Bug,
@@ -19,6 +20,7 @@ const OpsLayout = () => {
     const navItems = [
         { to: '/ops', icon: LayoutDashboard, label: 'Overview', end: true },
         { to: '/ops/users', icon: Users, label: 'Users' },
+        { to: '/ops/orgs', icon: Building2, label: 'Academies' },
         { to: '/ops/team', icon: ShieldAlert, label: 'Team Access' },
         { to: '/ops/diagnostics', icon: Activity, label: 'Diagnostics' },
         { to: '/ops/bugs', icon: Bug, label: 'Bug Reports' },

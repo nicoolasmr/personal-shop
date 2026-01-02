@@ -26,18 +26,26 @@ export async function getUserAchievements(userId: string): Promise<UserAchieveme
 export async function unlockAchievement(userId: string, achievementId: string): Promise<boolean> {
     if (!supabaseConfigured) return false;
 
+    console.log(`[unlockAchievement] Attempting to unlock ${achievementId} for user ${userId}`);
+
     const { error } = await supabase
         .from('user_achievements')
-        .insert({ user_id: userId, achievement_id: achievementId } as any)
-        .select()
-        .single();
+        .insert({
+            user_id: userId,
+            achievement_id: achievementId,
+            unlocked_at: new Date().toISOString()
+        } as any);
 
     if (error) {
-        if (error.code === '23505') return true; // Already unlocked
-        console.error('Error unlocking achievement:', error);
+        if (error.code === '23505') {
+            console.log(`[unlockAchievement] Achievement ${achievementId} already unlocked.`);
+            return true; // Already unlocked
+        }
+        console.error(`[unlockAchievement] Error unlocking ${achievementId}:`, error);
         return false;
     }
 
+    console.log(`[unlockAchievement] Successfully unlocked ${achievementId}!`);
     return true;
 }
 
@@ -61,34 +69,28 @@ export interface ExternalAchievementStats {
 }
 
 export function calculateAchievementProgress(habits: HabitWithCheckins[], externalStats?: ExternalAchievementStats): AchievementProgress {
-    const streakBest = Math.max(...habits.map(h => calculateStreak(h.checkins)), 0);
-    const totalCheckins = habits.reduce((acc, h) => acc + h.checkins.filter(c => c.completed).length, 0);
+    // Ensure we have values and they are numbers
+    const streakBest = habits.length > 0 ? Math.max(...habits.map(h => calculateStreak(h.checkins || [])), 0) : 0;
+    const totalCheckins = habits.reduce((acc, h) => acc + (h.checkins?.filter(c => c.completed).length || 0), 0);
     const activeHabits = habits.filter(h => h.active).length;
     const uniqueCategories = new Set(habits.map(h => h.category).filter(Boolean)).size;
 
     return {
-        streakBest,
-        totalCheckins,
-        activeHabits,
-        uniqueCategories,
+        streakBest: Number(streakBest) || 0,
+        totalCheckins: Number(totalCheckins) || 0,
+        activeHabits: Number(activeHabits) || 0,
+        uniqueCategories: Number(uniqueCategories) || 0,
         perfectWeeks: 0,
         monthlyGoalsReached: 0,
         weeklyRate: 0,
-        tasksCompleted: externalStats?.tasksCompleted || 0,
-        financeTransactions: externalStats?.financeTransactions || 0,
-        financeGoals: externalStats?.financeGoals || 0
+        tasksCompleted: Number(externalStats?.tasksCompleted) || 0,
+        financeTransactions: Number(externalStats?.financeTransactions) || 0,
+        financeGoals: Number(externalStats?.financeGoals) || 0
     };
 }
 
 export function getAchievementsWithStatus(userAchievements: UserAchievement[], progress: AchievementProgress): AchievementWithStatus[] {
     const unlockedMap = new Map(userAchievements.map(ua => [ua.achievement_id, ua.unlocked_at]));
-
-    console.log('[Achievements Debug]', {
-        totalAchievements: ACHIEVEMENTS.length,
-        unlockedCount: userAchievements.length,
-        unlockedIds: Array.from(unlockedMap.keys()),
-        progress
-    });
 
     return ACHIEVEMENTS.map(achievement => {
         const unlocked = unlockedMap.has(achievement.id);
@@ -96,9 +98,10 @@ export function getAchievementsWithStatus(userAchievements: UserAchievement[], p
 
         // Safe division helper
         const safeProgress = (current: number, required: number): number => {
-            if (required <= 0) return 0;
-            const calculated = (current / required) * 100;
-            return Math.min(calculated, 100);
+            if (!required || required <= 0) return 0;
+            const currentVal = Number(current) || 0;
+            const calculated = (currentVal / required) * 100;
+            return Math.min(Math.round(calculated), 100);
         };
 
         // Calculate progress based on category
@@ -110,7 +113,6 @@ export function getAchievementsWithStatus(userAchievements: UserAchievement[], p
                 currentProgress = safeProgress(progress.totalCheckins, achievement.requirement);
                 break;
             case 'milestone':
-                // Logic based on specific IDs if needed, generic for now
                 if (achievement.id.startsWith('habits_')) {
                     currentProgress = safeProgress(progress.activeHabits, achievement.requirement);
                 } else if (achievement.id === 'all_categories') {
@@ -120,8 +122,8 @@ export function getAchievementsWithStatus(userAchievements: UserAchievement[], p
                 }
                 break;
             case 'consistency':
-                // Placeholder logic - needs proper implementation
-                currentProgress = 0;
+                // For now, these are not fully implemented, so we keep at 0 unless unlocked
+                currentProgress = unlocked ? 100 : 0;
                 break;
             case 'task':
                 currentProgress = safeProgress(progress.tasksCompleted, achievement.requirement);
@@ -133,20 +135,28 @@ export function getAchievementsWithStatus(userAchievements: UserAchievement[], p
                     currentProgress = progress.financeGoals >= 1 ? 100 : 0;
                 }
                 break;
+            default:
+                currentProgress = 0;
         }
 
-        // If unlocked, ensure it shows 100%
-        if (unlocked && currentProgress < 100) {
+        // If unlocked, force it to show 100%
+        if (unlocked) {
             currentProgress = 100;
         }
 
-        const finalProgress = Math.max(0, Math.min(Math.round(currentProgress), 100));
+        // CRITICAL FIX: If not unlocked, but progress is 100%, cap it at 99% until the unlock process finishes
+        // This prevents the "Locked but 100%" visual glitch reported by user.
+        if (!unlocked && currentProgress >= 100) {
+            // Check if it's one of the easy "first_" ones, which can be 100% 
+            // but for consistency we'll cap it at 99.
+            currentProgress = 99;
+        }
 
         return {
             ...achievement,
             unlocked,
             unlockedAt: unlockedMap.get(achievement.id),
-            progress: finalProgress
+            progress: currentProgress
         };
     });
 }
@@ -156,8 +166,25 @@ export async function checkAndUnlockAchievements(userId: string, habits: HabitWi
     const achievementsWithStatus = getAchievementsWithStatus(existingAchievements, progress);
     const newlyUnlocked: string[] = [];
 
+    console.log('[checkAndUnlockAchievements] Stats:', {
+        totalCheckins: progress.totalCheckins,
+        tasks: progress.tasksCompleted,
+        finance: progress.financeTransactions
+    });
+
     for (const achievement of achievementsWithStatus) {
-        if (!achievement.unlocked && achievement.progress >= 100) {
+        // If progress is 99 (capped from 100) or actually >= 100
+        const isEligible = !achievement.unlocked &&
+            (achievement.progress >= 99 ||
+                (achievement.category === 'completion' && progress.totalCheckins >= achievement.requirement) ||
+                (achievement.category === 'streak' && progress.streakBest >= achievement.requirement) ||
+                (achievement.category === 'task' && progress.tasksCompleted >= achievement.requirement) ||
+                (achievement.category === 'finance' && achievement.id === 'finance_first' && progress.financeTransactions >= 1) ||
+                (achievement.category === 'finance' && achievement.id === 'finance_saver' && progress.financeGoals >= 1)
+            );
+
+        if (isEligible) {
+            console.log(`[checkAndUnlockAchievements] Unlocking ${achievement.id}...`);
             if (await unlockAchievement(userId, achievement.id)) {
                 newlyUnlocked.push(achievement.id);
             }

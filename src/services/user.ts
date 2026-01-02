@@ -33,21 +33,48 @@ export async function updateProfile(userId: string, data: UpdateProfileData): Pr
 export async function uploadAvatar(userId: string, file: File): Promise<{ url: string | null; error?: string }> {
     if (!supabaseConfigured) return { url: null, error: 'Supabase não configurado' };
 
-    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+    try {
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const fileName = `${userId}/${Date.now()}.${fileExt}`;
 
-    // Delete old avatars
-    const { data: existingFiles } = await supabase.storage.from('avatars').list(userId);
-    if (existingFiles?.length) {
-        await supabase.storage.from('avatars').remove(existingFiles.map(f => `${userId}/${f.name}`));
+        console.log('[Storage] Listing existing files in /' + userId);
+        const { data: existingFiles, error: listError } = await supabase.storage.from('avatars').list(userId);
+
+        if (listError) {
+            console.error('[Storage] List error:', listError);
+            // Non-blocking, but good to know
+        }
+
+        if (existingFiles && existingFiles.length > 0) {
+            console.log('[Storage] Removing old avatars:', existingFiles.length);
+            const filesToRemove = existingFiles
+                .filter(f => f.name !== '.emptyFolderPlaceholder')
+                .map(f => `${userId}/${f.name}`);
+
+            if (filesToRemove.length > 0) {
+                await supabase.storage.from('avatars').remove(filesToRemove);
+            }
+        }
+
+        console.log('[Storage] Uploading new file:', fileName);
+        const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true
+        });
+
+        if (uploadError) {
+            console.error('[Storage] Upload error details:', uploadError);
+            return { url: null, error: uploadError.message };
+        }
+
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        console.log('[Storage] Public URL generated:', urlData.publicUrl);
+
+        return { url: urlData.publicUrl };
+    } catch (err: any) {
+        console.error('[Storage] Unexpected error:', err);
+        return { url: null, error: err.message || 'Erro inesperado no upload' };
     }
-
-    // Upload new avatar
-    const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, { cacheControl: '3600', upsert: true });
-    if (uploadError) return { url: null, error: uploadError.message };
-
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-    return { url: urlData.publicUrl };
 }
 
 export async function updatePassword(newPassword: string): Promise<{ success: boolean; error?: string }> {
