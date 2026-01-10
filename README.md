@@ -1,32 +1,36 @@
-# VIDA360 - Gestão 360 do seu Estilo de Vida
+# Personal Shop
 
-Bem-vindo ao repositório do **VIDA360**, uma plataforma integrada para gestão de metas, hábitos, tarefas e finanças.
+Bem-vindo ao repositório do **Personal Shop**, uma plataforma de e-commerce com foco em experiência consistente, confiável e otimizada para conversão.
 
-## 🚀 Como Começar
-Veja o arquivo [SETUP.md](docs/SETUP.md) para instruções de instalação.
+## 🚀 Como começar
+Veja o guia de instalação e variáveis de ambiente em [docs/SETUP.md](docs/SETUP.md).
 
-## 📚 Documentação Central
-- [Technical Handoff Report](docs/TECHNICAL_HANDOFF_REPORT.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Database](docs/DB_SCHEMA.md)
-- [Setup](docs/SETUP.md)
-- [Deployment](docs/DEPLOYMENT.md)
-- [Routes](docs/ROUTES.md)
-- [Security](docs/SECURITY.md)
+## 🧭 Navegação rápida
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Rotas](docs/ROUTES.md)
+- [Segurança](docs/SECURITY.md)
 - [Runbook (Operations)](docs/RUNBOOK.md)
 - [Quality Assurance](docs/qa/QA.md)
 
-## 🧩 Módulos do Sistema
--   [Hábitos](docs/modules/HABITS.md)
--   [Metas](docs/modules/GOALS.md)
--   [Tarefas](docs/modules/TASKS.md)
--   [Finanças](docs/modules/FINANCE.md)
+## 🧩 Design system e UX
+- [Design System E-commerce](docs/DESIGN_SYSTEM_ECOMMERCE.md)
+- [Auditoria Completa de Rotas](docs/AUDITORIA_COMPLETA_ROTAS.md)
 
-## 📊 Relatórios e Histórico
+## 🧪 Scripts principais
+
+```bash
+npm run dev        # ambiente local
+npm run build      # build de produção
+npm run lint       # lint do código
+npm run test:run   # testes unitários
+npm run e2e        # testes e2e (Playwright)
+```
+
+## 📦 Estrutura do repositório
+- `src/` — aplicação React (Vite + TypeScript)
+- `docs/` — documentação técnica e relatórios
+- `supabase/` — migrações e recursos de banco
+- `e2e/` — testes end-to-end
+
+## 📊 Relatórios e histórico
 Consulte a pasta [docs/reports](docs/reports/) para ver o histórico de sprints e hotfixes.
-
-## 🗄️ Banco de Dados
-Todas as migrações SQL estão localizadas em [supabase/migrations](supabase/migrations/).
-
----
-*Gerado via Antigravity em 2025-12-29*
